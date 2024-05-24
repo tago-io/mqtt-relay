@@ -1,0 +1,9 @@
+[package]
+name = "mqtt-bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8.5"
+rumqttc = "0.24.0"
+tokio = {version = "1.37.0", features = ["full", "rt-multi-thread"]}
