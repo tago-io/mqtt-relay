@@ -19,6 +19,8 @@ use tokio::sync::{mpsc, RwLock};
 use tokio::time::sleep;
 use utils::ConfigFile;
 
+use crate::utils::Authentication;
+
 lazy_static! {
     static ref CONFIG_FILE: Option<ConfigFile> = utils::fetch_config_file();
 }
@@ -153,7 +155,7 @@ async fn simulate_redis_updates(tx: mpsc::Sender<UpdateMessage>) {
         // Simulate an update
         let mut bridges = Vec::new();
         for j in 1..=2 {
-            let client_id = format!("client_2_{}", j);
+            let client_id = Some(format!("client_2_{}", j));
             let bridge = BridgeConfig {
                 id: format!("2_{}", j),
                 address: "mqtt.tago.io".to_string(),

@@ -1,5 +1,5 @@
 use crate::{schema::BridgeConfig, utils::calculate_backoff};
-use rumqttc::{tokio_rustls::client, AsyncClient, MqttOptions, QoS, TlsConfiguration};
+use rumqttc::{AsyncClient, MqttOptions, QoS, TlsConfiguration};
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::{
@@ -123,7 +123,7 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
 
                     println!(
                         "Received message on topic {}: {:?}",
-                        publish.topic, publish.payload, publish.
+                        publish.topic, publish.payload
                     );
                 }
                 _ => {

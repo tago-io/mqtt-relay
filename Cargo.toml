@@ -9,8 +9,8 @@ axum = "0.7.5"
 config = "0.14.0"
 lazy_static = "1.4.0"
 rand = "0.8.5"
-reqwest = "0.12.4"
-rumqttc = { version = "0.24.0", features = ["rustls-tls", "json"]}
+reqwest = { version = "0.12.4", features = ["rustls-tls", "json"] }
+rumqttc = { version = "0.24.0" }
 serde = "1.0.203"
 serde_json = "1.0.117"
 tempfile = "3.10.1"
