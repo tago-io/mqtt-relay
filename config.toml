@@ -1,0 +1,15 @@
+[tagoio]
+network_token="Your-Network-Token"
+authorization="Your-Authorization-Token"
+
+[config]
+tls_enabled=false
+address="localhost"
+port=1883
+subscribe=["/tago/#", "/device/+"]
+
+[config.authentication]
+client_id="tago-relay"
+username="tago-relay"
+password="tago-relay"
+

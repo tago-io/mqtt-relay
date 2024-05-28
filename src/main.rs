@@ -2,90 +2,151 @@ mod schema;
 mod services;
 mod utils;
 
+use anyhow::Result;
+use axum::response::IntoResponse;
+use axum::routing::post;
+use axum::{self, Json};
+use axum::{Extension, Router};
+use lazy_static::lazy_static;
 use schema::BridgeConfig;
-use services::bridge::run_bridge;
-use services::tagoio::fetch_customer_settings;
+use services::bridge::{run_bridge, PublishMessage};
+use services::tagoio::fetch_bridges;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio;
-use tokio::sync::mpsc;
-use tokio::task::JoinHandle;
+use tokio::sync::{mpsc, RwLock};
 use tokio::time::sleep;
+use utils::ConfigFile;
 
-use crate::schema::Customer;
+lazy_static! {
+    static ref CONFIG_FILE: Option<ConfigFile> = utils::fetch_config_file();
+}
 
-// TODO: How do I setup max tasks?
+#[derive(serde::Deserialize)]
+struct PublishRequest {
+    topic: String,
+    message: String,
+    bridge_id: String,
+    qos: u8,
+    retain: bool,
+}
+
 #[tokio::main]
-async fn main() {
-    // Simulate fetching customer and bridge configurations
-    // ? How are we going to receive updates? Pulling the Database ? or Redis ? or a hook ?
-    let customers = fetch_customer_settings().await;
-    let customers = Arc::new(Mutex::new(customers));
+async fn main() -> Result<()> {
+    // Simulate fetching bridge configurations
+    let bridges = fetch_bridges().await;
+    let bridges = Arc::new(Mutex::new(bridges));
 
     let (tx, mut rx) = mpsc::channel(32);
 
     // Spawn a task to simulate receiving updates
-    let tx_clone = tx.clone();
-    tokio::task::spawn(async move {
-        simulate_redis_updates(tx_clone).await;
-    });
+    // let tx_clone = tx.clone();
+    // tokio::task::spawn(async move {
+    //     simulate_redis_updates(tx_clone).await;
+    // });
 
-    let customers_clone = Arc::clone(&customers);
+    let bridges_clone = Arc::clone(&bridges);
     tokio::task::spawn(async move {
         while let Some(message) = rx.recv().await {
             match message {
-                UpdateMessage::UpdateCustomer(updated_customer) => {
-                    let mut customers = customers_clone.lock().unwrap();
-                    customers.insert(updated_customer.id, updated_customer);
+                UpdateMessage::UpdateBridge(updated_bridge) => {
+                    let mut bridges = bridges_clone.lock().unwrap();
+                    if let Some(pos) = bridges.iter().position(|b| b.id == updated_bridge.id) {
+                        bridges[pos] = Arc::new(updated_bridge);
+                    } else {
+                        bridges.push(Arc::new(updated_bridge));
+                    }
                 }
-                UpdateMessage::RemoveCustomer(customer_id) => {
-                    let mut customers = customers_clone.lock().unwrap();
-                    customers.remove(&customer_id);
+                UpdateMessage::RemoveBridge(bridge_id) => {
+                    let mut bridges = bridges_clone.lock().unwrap();
+                    bridges.retain(|b| b.id != bridge_id);
                 }
             }
         }
     });
 
-    let mut tasks = HashMap::new();
+    let tasks = Arc::new(RwLock::new(HashMap::new()));
 
+    // Start the HTTP server
+    let app = Router::new()
+        .route("/publish", post(handle_publish))
+        .layer(Extension(tasks.clone()));
+    let server = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+
+    tokio::spawn(async move {
+        axum::serve(server, app).await.unwrap();
+    });
+
+    // Start the bridge tasks
     loop {
-        let customers = customers.lock().unwrap().clone();
+        let bridges = bridges.lock().unwrap().clone();
 
-        for (customer_id, customer) in customers.iter() {
-            for bridge in &customer.bridges {
-                let bridge_id = bridge.id.clone();
-                println!("{}", bridge_id);
-                if !tasks.contains_key(&bridge_id) {
-                    let bridge_clone = Arc::clone(bridge);
-                    let task = tokio::task::spawn(async move {
-                        run_bridge(bridge_clone).await;
-                    });
-                    tasks.insert(bridge_id.clone(), task);
-                }
+        for bridge in &bridges {
+            let bridge_id = bridge.id.clone();
+            if !tasks.read().await.contains_key(&bridge_id) {
+                let bridge_clone = Arc::clone(bridge);
+                let (publish_tx, publish_rx) = mpsc::channel(32);
+                let task = tokio::task::spawn(async move {
+                    run_bridge(bridge_clone, publish_rx).await;
+                });
+                tasks
+                    .write()
+                    .await
+                    .insert(bridge_id.clone(), (task, publish_tx));
             }
         }
 
-        // Wait for all tasks to complete
-        tasks.retain(|_, task| !task.is_finished());
+        // ! Task reinitiate since we are not removing the task from the bridge list.
+        tasks
+            .write()
+            .await
+            .retain(|_, (task, _)| !task.is_finished());
 
         sleep(Duration::from_secs(5)).await;
-        println!("All bridge tasks completed.");
     }
 }
 
 /**
-* Mock customer and bridge configurations
+* Handle incoming publish requests from the HTTP server
+*/
+async fn handle_publish(
+    Extension(tasks): Extension<
+        Arc<RwLock<HashMap<String, (tokio::task::JoinHandle<()>, mpsc::Sender<PublishMessage>)>>>,
+    >,
+    Json(payload): Json<PublishRequest>,
+) -> Result<impl IntoResponse, axum::http::StatusCode> {
+    let tasks = tasks.read().await;
+    if let Some((_, publish_tx)) = tasks.get(&payload.bridge_id) {
+        let message = PublishMessage {
+            topic: payload.topic,
+            message: payload.message,
+            qos: payload.qos,
+            retain: payload.retain,
+        };
+        publish_tx
+            .send(message)
+            .await
+            .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+        Ok(axum::http::StatusCode::OK)
+    } else {
+        Err(axum::http::StatusCode::NOT_FOUND)
+    }
+}
+
+/**
+* Mock bridge configurations
 */
 
 enum UpdateMessage {
-    UpdateCustomer(Customer),
-    RemoveCustomer(u32),
+    UpdateBridge(BridgeConfig),
+    RemoveBridge(String),
 }
 
 async fn simulate_redis_updates(tx: mpsc::Sender<UpdateMessage>) {
+    // ! Rewrite with logic to fetch updates from Redis?
     loop {
-        sleep(Duration::from_secs(2)).await;
+        sleep(Duration::from_secs(20)).await;
 
         println!("Simulating Redis updates");
 
@@ -98,17 +159,24 @@ async fn simulate_redis_updates(tx: mpsc::Sender<UpdateMessage>) {
                 address: "mqtt.tago.io".to_string(),
                 version: "3.1.1".to_string(),
                 tls: false,
-                client_id,
-                username: Some("Token".to_string()),
-                password: Some("new_password".to_string()),
+                port: 1883,
                 certificate: None,
+                profile_id: Some("1".to_string()),
+                state: None,
+                subscribe: vec!["tago/my_topic".to_string()],
+                network_token: "3a162597-8724-46c0-864b-1ac220a77123".to_string(),
+                authorization_token: "3a162597-8724-46c0-864b-1ac220a77123".to_string(),
+                authentication: Authentication {
+                    client_id,
+                    username: "Token2".to_string(),
+                    password: "3a162597-8724-46c0-864b-1ac220a77123".to_string(),
+                },
             };
-            bridges.push(Arc::new(bridge));
+            bridges.push(bridge);
         }
-        let updated_customer = Customer { id: 1, bridges };
 
-        tx.send(UpdateMessage::UpdateCustomer(updated_customer))
-            .await
-            .unwrap();
+        for bridge in bridges {
+            tx.send(UpdateMessage::UpdateBridge(bridge)).await.unwrap();
+        }
     }
 }

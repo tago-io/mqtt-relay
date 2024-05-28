@@ -4,6 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.86"
+axum = "0.7.5"
+config = "0.14.0"
+lazy_static = "1.4.0"
 rand = "0.8.5"
-rumqttc = "0.24.0"
+reqwest = "0.12.4"
+rumqttc = { version = "0.24.0", features = ["rustls-tls", "json"]}
+serde = "1.0.203"
+serde_json = "1.0.117"
+tempfile = "3.10.1"
 tokio = {version = "1.37.0", features = ["full", "rt-multi-thread"]}
+toml-env = "1.2.0"
