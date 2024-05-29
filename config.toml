@@ -1,15 +1,15 @@
-[tagoio]
-network_token="Your-Network-Token"
-authorization="Your-Authorization-Token"
+[relay]
+network_token="Your-Network-Token" # Generate a Network Token under your TagoIO Network Settings
+authorization_token="Your-Authorization-Token" # Generate an Authorization Token under your TagoIO > Devices > Authorizations
+tagoio_url="https://api.tago.io" # Default
+api_port="3000" # Default is 3000
 
-[config]
+[relay.mqtt]
+client_id="tagoio-relay" # Default is tagoio-relay
 tls_enabled=false
 address="localhost"
 port=1883
-subscribe=["/tago/#", "/device/+"]
-
-[config.authentication]
-client_id="tago-relay"
-username="tago-relay"
-password="tago-relay"
-
+subscribe=["/tago/#", "/device/+"] # MQTT topics to subscribe to
+username="my-username"
+password="my-passowrd"
+authentication_certificate_file="certs/ca.crt" # Path to the CA certificate file. Alternative to username and password

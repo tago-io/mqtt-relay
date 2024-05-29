@@ -1,4 +1,4 @@
-use crate::{schema::BridgeConfig, utils::calculate_backoff};
+use crate::{schema::RelayConfig, utils::calculate_backoff};
 use rumqttc::{AsyncClient, MqttOptions, QoS, TlsConfiguration};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -15,21 +15,37 @@ pub struct PublishMessage {
     pub retain: bool,
 }
 
-pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<PublishMessage>) {
-    println!("Running bridge task for client ID: {}", bridge.id);
+pub async fn run_mqtt_relay_connection(
+    relay_cfg: Arc<RelayConfig>,
+    publish_rx: mpsc::Receiver<PublishMessage>,
+) {
+    println!("Running bridge task for client ID: {}", relay_cfg.id);
+
     let publish_rx = Arc::new(Mutex::new(publish_rx));
-    let client_id = &bridge
-        .authentication
+
+    // Desconstruct the relay configuration
+    let client_id = &relay_cfg
+        .config
+        .mqtt
         .client_id
         .clone()
         .unwrap_or("tagoio-relay".to_string());
 
-    let mut mqttoptions = MqttOptions::new(client_id, &bridge.address, bridge.port);
+    let username = &relay_cfg.config.mqtt.username;
+    let password = &relay_cfg.config.mqtt.password;
+    let certificate_file = &relay_cfg.config.mqtt.authentication_certificate_file;
+
+    // Start the MQTT client
+    let mut mqttoptions = MqttOptions::new(
+        client_id,
+        &relay_cfg.config.mqtt.address,
+        relay_cfg.config.mqtt.port,
+    );
     mqttoptions.set_keep_alive(Duration::from_secs(30));
     mqttoptions.set_max_packet_size(1024 * 1024, 1024 * 1024); // 1mb in/out
 
-    if bridge.tls || bridge.address.starts_with("ssl") {
-        if let Some(certificate) = &bridge.certificate {
+    if relay_cfg.config.mqtt.tls_enabled || relay_cfg.config.mqtt.address.starts_with("ssl") {
+        if let Some(certificate) = &certificate_file {
             mqttoptions.set_transport(rumqttc::Transport::tls_with_config(
                 TlsConfiguration::Simple {
                     ca: certificate.clone().into_bytes(),
@@ -41,11 +57,13 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
     }
 
     // TODO: Review this logic for picking the right credentials (tls/certificate VS tls/username+password VS no-tls/username+password)
-    if !bridge.authentication.username.is_empty() {
-        if !bridge.certificate.is_none() {
+    if username.is_some() {
+        if !certificate_file.is_none() {
             mqttoptions.set_credentials(
-                &bridge.authentication.username,
-                &bridge.authentication.password,
+                username.as_ref().unwrap(),
+                password
+                    .as_ref()
+                    .expect("Password must be provided if username is set"),
             );
         }
     }
@@ -57,7 +75,7 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
         // TODO: Review the CAP later
         let (client, mut eventloop) = AsyncClient::new(mqttoptions.clone(), 15);
 
-        for topic in bridge.subscribe.iter() {
+        for topic in relay_cfg.config.mqtt.subscribe.iter() {
             client.subscribe(topic, QoS::AtMostOnce).await.unwrap();
         }
 
@@ -68,7 +86,7 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
                 if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = notification {
                     println!(
                         "Connection to MQTT broker was successful for: {}",
-                        bridge.id
+                        relay_cfg.id
                     );
 
                     // Reset backoff attempts
@@ -87,8 +105,8 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
                 // }
 
                 println!(
-                    "Failed to connect to MQTT broker for client ID: {}. Error: {:?}",
-                    bridge.id, e
+                    "Action Required: Failed to connect to MQTT broker. Error details: {:?}",
+                    e.to_string()
                 );
             }
         }
@@ -113,18 +131,15 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
             match notification {
                 rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
                     if let Err(e) =
-                        crate::services::tagoio::forward_buffer_messages(&bridge, &publish).await
+                        crate::services::tagoio::forward_buffer_messages(&relay_cfg, &publish).await
                     {
-                        println!(
-                            "Failed to forward message to TagoIO for bridge ID: {}. Error: {:?}",
-                            bridge.id, e
-                        );
+                        println!("Failed to forward message to TagoIO: {:?}", e.to_string());
                     }
 
-                    println!(
-                        "Received message on topic {}: {:?}",
-                        publish.topic, publish.payload
-                    );
+                    // println!(
+                    //     "Received message on topic {}: {:?}",
+                    //     publish.topic, publish.payload
+                    // );
                 }
                 _ => {
                     println!("Received = {:?}", notification);
@@ -140,8 +155,7 @@ pub async fn run_bridge(bridge: Arc<BridgeConfig>, publish_rx: mpsc::Receiver<Pu
         // Exponential Backoff
 
         if backoff_retry_attempts >= backoff_max_retries {
-            println!(">>> Max retries reached. Exiting: {}", bridge.id);
-            // TODO: Report to TagoIO that the bridge is down
+            eprintln!("Warning: Max retries reached. Exiting: {}", relay_cfg.id);
             return;
         }
         let backoff_duration = calculate_backoff(backoff_retry_attempts);
