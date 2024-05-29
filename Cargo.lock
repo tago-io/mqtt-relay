@@ -718,24 +718,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mqtt-bridge"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "config",
- "lazy_static",
- "rand",
- "reqwest",
- "rumqttc",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "toml-env",
-]
-
-[[package]]
 name = "native-tls"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1420,6 +1402,24 @@ checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "tagoio-mqtt-relay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "config",
+ "once_cell",
+ "rand",
+ "reqwest",
+ "rumqttc",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "toml-env",
 ]
 
 [[package]]
