@@ -97,3 +97,100 @@ pub async fn verify_network_token(relay_cfg: &RelayConfig) {
         panic!("Invalid Network Token");
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::schema::{ConfigFile, MQTT};
+    use mockito::Matcher;
+    use rumqttc::{Publish, QoS};
+    use std::str::FromStr;
+    use tokio;
+
+    fn get_test_relay_config(server: &mockito::Server) -> RelayConfig {
+        RelayConfig {
+            id: "test_id".to_string(),
+            config: ConfigFile {
+                network_token: "test_network_token".to_string(),
+                authorization_token: "test_authorization_token".to_string(),
+                tagoio_url: Some(server.url()),
+                api_port: Some("3000".to_string()),
+                mqtt: MQTT {
+                    client_id: Some("test_client_id".to_string()),
+                    tls_enabled: false,
+                    address: "localhost".to_string(),
+                    port: 1883,
+                    subscribe: vec!["/tago/#".to_string(), "/device/+".to_string()],
+                    username: Some("test_username".to_string()),
+                    password: Some("test_password".to_string()),
+                    authentication_certificate_file: Some("certs/ca.crt".to_string()),
+                },
+            },
+            profile_id: None,
+            state: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_forward_buffer_messages() {
+        let mut server = mockito::Server::new_async().await;
+        let relay_cfg = get_test_relay_config(&server);
+        let event = Publish::new(
+            "test/topic",
+            QoS::AtLeastOnce,
+            vec![104, 101, 108, 108, 111], // "hello" in bytes
+        );
+
+        let _m = server
+            .mock("POST", "/integrations/network/data")
+            .match_query(Matcher::UrlEncoded(
+                "authorization_token".into(),
+                "test_authorization_token".into(),
+            ))
+            .match_header("AUTHORIZATION", "test_network_token")
+            .match_body(Matcher::Json(serde_json::json!([{
+                "variable": "payload",
+                "value": "hello",
+                "metadata": {
+                    "topic": "test/topic",
+                    "qos": 1,
+                }
+            }])))
+            .with_status(200)
+            .with_body("Success")
+            .create_async()
+            .await;
+
+        let result = forward_buffer_messages(&relay_cfg, &event).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_verify_network_token() {
+        let mut server = mockito::Server::new_async().await;
+        let relay_cfg = get_test_relay_config(&server);
+        let _m = server
+            .mock("GET", "/info")
+            .match_header("AUTHORIZATION", "test_network_token")
+            .with_status(200)
+            .create_async()
+            .await;
+
+        verify_network_token(&relay_cfg).await;
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "Invalid Network Token")]
+    async fn test_verify_network_token_invalid() {
+        let mut server = mockito::Server::new_async().await;
+        let relay_cfg = get_test_relay_config(&server);
+
+        let _m = server
+            .mock("GET", "/info")
+            .match_header("AUTHORIZATION", "test_network_token")
+            .with_status(401)
+            .create_async()
+            .await;
+
+        verify_network_token(&relay_cfg).await;
+    }
+}

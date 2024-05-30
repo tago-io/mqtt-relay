@@ -3,6 +3,9 @@ name = "tagoio-mqtt-relay"
 version = "0.1.0"
 edition = "2021"
 
+[dev-dependencies]
+mockito = "1.4.0"
+
 [dependencies]
 anyhow = "1.0.86"
 axum = "0.7.5"
