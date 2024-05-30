@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use regex::Regex;
 
 #[derive(Debug, Clone)]
@@ -34,7 +32,7 @@ impl RelayConfig {
     pub fn new_with_defaults(
         profile_id: Option<String>,
         config: ConfigFile,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> anyhow::Result<Self> {
         // Ensure that profile_id and state are not None
         let id = "self-hosted".to_string();
         let profile_id = Some(profile_id.unwrap_or_else(|| "self-hosted".to_string()));

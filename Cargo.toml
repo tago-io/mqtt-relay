@@ -17,6 +17,5 @@ reqwest = { version = "0.12.4", features = ["rustls-tls", "json"] }
 rumqttc = { version = "0.24.0" }
 serde = "1.0.203"
 serde_json = "1.0.117"
-tempfile = "3.10.1"
 tokio = {version = "1.37.0", features = ["full", "rt-multi-thread"]}
 toml-env = "1.2.0"

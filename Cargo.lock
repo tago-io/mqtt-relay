@@ -1566,7 +1566,6 @@ dependencies = [
  "rumqttc",
  "serde",
  "serde_json",
- "tempfile",
  "tokio",
  "toml-env",
 ]

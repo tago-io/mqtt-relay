@@ -7,6 +7,7 @@ use tokio::{
     time::{sleep, Duration},
 };
 
+const BACKOFF_MAX_RETRIES: u32 = 20;
 #[derive(Deserialize)]
 pub struct PublishMessage {
     pub topic: String,
@@ -23,8 +24,44 @@ pub async fn run_mqtt_relay_connection(
 
     let publish_rx = Arc::new(Mutex::new(publish_rx));
 
-    // Desconstruct the relay configuration
-    let client_id = &relay_cfg
+    let mqttoptions = initialize_mqtt_options(&relay_cfg);
+
+    let mut backoff_retry_attempts = 0;
+
+    loop {
+        let (client, mut eventloop) = AsyncClient::new(mqttoptions.clone(), 15);
+
+        subscribe_to_topics(&client, &relay_cfg).await;
+
+        if let Err(e) = handle_mqtt_connection(&mut eventloop).await {
+            println!(
+                "Action Required: Failed to connect to MQTT broker. Error details: {:?}",
+                e.to_string()
+            );
+        } else {
+            backoff_retry_attempts = 0;
+        }
+
+        let publish_rx_clone = Arc::clone(&publish_rx);
+        tokio::spawn(async move {
+            publish_messages(client, publish_rx_clone).await;
+        });
+
+        process_incoming_messages(&mut eventloop, &relay_cfg).await;
+
+        if backoff_retry_attempts >= BACKOFF_MAX_RETRIES {
+            eprintln!("Warning: Max retries reached. Exiting: {}", relay_cfg.id);
+            return;
+        }
+        let backoff_duration = calculate_backoff(backoff_retry_attempts);
+        println!("Retrying in {:?}", backoff_duration);
+        sleep(backoff_duration).await;
+        backoff_retry_attempts += 1;
+    }
+}
+
+fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
+    let client_id = relay_cfg
         .config
         .mqtt
         .client_id
@@ -35,9 +72,8 @@ pub async fn run_mqtt_relay_connection(
     let password = &relay_cfg.config.mqtt.password;
     let certificate_file = &relay_cfg.config.mqtt.authentication_certificate_file;
 
-    // Start the MQTT client
     let mut mqttoptions = MqttOptions::new(
-        client_id,
+        &client_id,
         &relay_cfg.config.mqtt.address,
         relay_cfg.config.mqtt.port,
     );
@@ -45,21 +81,21 @@ pub async fn run_mqtt_relay_connection(
     mqttoptions.set_max_packet_size(1024 * 1024, 1024 * 1024); // 1mb in/out
 
     if relay_cfg.config.mqtt.tls_enabled || relay_cfg.config.mqtt.address.starts_with("ssl") {
-        if let Some(certificate) = &certificate_file {
+        if let Some(certificate) = certificate_file {
             mqttoptions.set_transport(rumqttc::Transport::tls_with_config(
                 TlsConfiguration::Simple {
                     ca: certificate.clone().into_bytes(),
-                    alpn: None, // or Some(vec!["protocol".to_string()]) if you need ALPN
-                    client_auth: None, // or Some((client_cert, client_key)) if you need client authentication
+                    alpn: None,
+                    client_auth: None,
                 },
             ));
         }
     }
 
-    if username.is_some() {
-        if !certificate_file.is_none() {
+    if let Some(username) = username {
+        if certificate_file.is_some() {
             mqttoptions.set_credentials(
-                username.as_ref().unwrap(),
+                username,
                 password
                     .as_ref()
                     .expect("Password must be provided if username is set"),
@@ -67,96 +103,65 @@ pub async fn run_mqtt_relay_connection(
         }
     }
 
-    let mut backoff_retry_attempts = 0;
-    let backoff_max_retries = 15;
+    mqttoptions
+}
 
-    loop {
-        // TODO: Review the CAP later
-        let (client, mut eventloop) = AsyncClient::new(mqttoptions.clone(), 15);
+async fn subscribe_to_topics(client: &AsyncClient, relay_cfg: &RelayConfig) {
+    for topic in relay_cfg.config.mqtt.subscribe.iter() {
+        client.subscribe(topic, QoS::AtMostOnce).await.unwrap();
+    }
+}
 
-        for topic in relay_cfg.config.mqtt.subscribe.iter() {
-            client.subscribe(topic, QoS::AtMostOnce).await.unwrap();
+async fn handle_mqtt_connection(
+    eventloop: &mut rumqttc::EventLoop,
+) -> Result<(), rumqttc::ConnectionError> {
+    match eventloop.poll().await {
+        Ok(notification) => {
+            if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = notification {
+                println!("Connection to MQTT broker was successful");
+            }
+            Ok(())
         }
+        Err(e) => Err(e),
+    }
+}
 
-        // Attempt to connect to the MQTT broker
-        match eventloop.poll().await {
-            Ok(notification) => {
-                println!("Received = {:?}", notification);
-                if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = notification {
-                    println!("Connection to MQTT broker was successful");
+async fn publish_messages(
+    client: AsyncClient,
+    publish_rx: Arc<Mutex<mpsc::Receiver<PublishMessage>>>,
+) {
+    while let Some(publish_message) = publish_rx.lock().await.recv().await {
+        println!(
+            "[API] External published received on topic {}.",
+            publish_message.topic
+        );
+        client
+            .publish(
+                &publish_message.topic,
+                QoS::AtLeastOnce,
+                publish_message.retain,
+                publish_message.message.as_bytes(),
+            )
+            .await
+            .unwrap();
+    }
+}
 
-                    // Reset backoff attempts
-                    backoff_retry_attempts = 0;
+async fn process_incoming_messages(eventloop: &mut rumqttc::EventLoop, relay_cfg: &RelayConfig) {
+    while let Ok(notification) = eventloop.poll().await {
+        match notification {
+            rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
+                println!("[Broker] Received message on topic {}", publish.topic);
+                if let Err(e) =
+                    crate::services::tagoio::forward_buffer_messages(&relay_cfg, &publish).await
+                {
+                    println!("Failed to forward message to TagoIO: {:?}", e.to_string());
                 }
             }
-            Err(e) => {
-                // TODO: Critical error handling such as TLS errors should be handled differently
-                // if let rumqttc::ConnectionError::Tls(_) = e {
-                //     println!(
-                //         "Uncategorized error encountered for client ID: {}. Dropping error: {:?}",
-                //         bridge.client_id, e
-                //     );
-                //     // TODO: Report to TagoIO that the bridge is down
-                //     return;
-                // }
-
-                println!(
-                    "Action Required: Failed to connect to MQTT broker. Error details: {:?}",
-                    e.to_string()
-                );
-            }
+            // rumqttc::Event::Incoming(rumqttc::Packet::SubAck(suback)) => {
+            //     println!("Subscription acknowledged: {:?}", suback);
+            // }
+            _ => {}
         }
-
-        let publish_rx_clone = Arc::clone(&publish_rx);
-        tokio::spawn(async move {
-            while let Some(publish_message) = publish_rx_clone.lock().await.recv().await {
-                client
-                    .publish(
-                        &publish_message.topic,
-                        QoS::AtLeastOnce,
-                        publish_message.retain,
-                        publish_message.message.as_bytes(),
-                    )
-                    .await
-                    .unwrap();
-            }
-        });
-
-        // Continue processing other notifications
-        while let Ok(notification) = eventloop.poll().await {
-            match notification {
-                rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
-                    if let Err(e) =
-                        crate::services::tagoio::forward_buffer_messages(&relay_cfg, &publish).await
-                    {
-                        println!("Failed to forward message to TagoIO: {:?}", e.to_string());
-                    }
-
-                    // println!(
-                    //     "Received message on topic {}: {:?}",
-                    //     publish.topic, publish.payload
-                    // );
-                }
-                _ => {
-                    println!("Received = {:?}", notification);
-                }
-            }
-        }
-        // Simulate running task
-        sleep(Duration::from_secs(2)).await;
-
-        // !Reach here if connection is closed
-        // !Reach here if timeout on connection (no control over how much time it waits for response)
-
-        // Exponential Backoff
-
-        if backoff_retry_attempts >= backoff_max_retries {
-            eprintln!("Warning: Max retries reached. Exiting: {}", relay_cfg.id);
-            return;
-        }
-        let backoff_duration = calculate_backoff(backoff_retry_attempts);
-        println!("Retrying in {:?}", backoff_duration);
-        sleep(backoff_duration).await;
-        backoff_retry_attempts += 1;
     }
 }

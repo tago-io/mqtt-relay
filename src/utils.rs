@@ -21,9 +21,17 @@ pub fn fetch_config_file() -> Option<ConfigFile> {
         config_path: Some(&config_path),
         ..Args::default()
     })
-    .unwrap()?;
+    .unwrap_or_else(|err| {
+        eprintln!("Failed to initialize configuration: {}", err);
+        std::process::exit(1);
+    });
 
-    config.unwrap().relay
+    config
+        .unwrap_or_else(|| {
+            eprintln!("Configuration file is missing or invalid.");
+            std::process::exit(1);
+        })
+        .relay
 }
 
 pub fn calculate_backoff(attempt: u32) -> Duration {

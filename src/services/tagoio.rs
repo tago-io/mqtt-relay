@@ -2,12 +2,17 @@ use std::sync::Arc;
 
 use anyhow::Error;
 use axum::http::{HeaderMap, HeaderValue};
-use reqwest::header::AUTHORIZATION;
+use reqwest::StatusCode;
 use rumqttc::{Publish, QoS};
 use serde_json;
+use std::fmt;
 
 use crate::{schema::RelayConfig, CONFIG_FILE};
 
+/**
+ * Get the list of relay configurations
+ * To be improved later to support multiple relays
+ */
 pub async fn get_relay_list() -> Result<Vec<Arc<RelayConfig>>, Error> {
     if let Some(config) = &*CONFIG_FILE {
         println!("Config file loaded successfully");
@@ -20,24 +25,86 @@ pub async fn get_relay_list() -> Result<Vec<Arc<RelayConfig>>, Error> {
     Err(anyhow::anyhow!("Config file not found or invalid"))
 }
 
+#[derive(Debug)]
+pub struct CustomError {
+    pub status: StatusCode,
+    pub body: String,
+    pub message: String,
+}
+
+impl fmt::Display for CustomError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Status: {}, Body: {}, Message: {}",
+            self.status, self.body, self.message
+        )
+    }
+}
+
+impl std::error::Error for CustomError {}
+
+/**
+ * Wrapper function to make a request to the TagoIO API
+ */
+async fn make_request(
+    method: reqwest::Method,
+    url: &str,
+    headers: HeaderMap,
+    body: Option<serde_json::Value>,
+) -> Result<String, CustomError> {
+    let client = reqwest::Client::new();
+    let request = client.request(method, url).headers(headers);
+
+    let request = if let Some(body) = body {
+        request.json(&body)
+    } else {
+        request
+    };
+
+    let response = request.send().await.map_err(|e| CustomError {
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+        body: String::new(),
+        message: e.to_string(),
+    })?;
+
+    let status = response.status();
+    let text = response.text().await.map_err(|e| CustomError {
+        status,
+        body: String::new(),
+        message: e.to_string(),
+    })?;
+
+    if !status.is_success() {
+        return Err(CustomError {
+            status,
+            body: text.clone(),
+            message: format!("Request failed with status: {}", status),
+        });
+    }
+    Ok(text)
+}
+
+/**
+ * Forward the buffered messages to TagoIO Network
+ */
 pub async fn forward_buffer_messages(
     relay_cfg: &RelayConfig,
     event: &Publish,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let endpoint = &relay_cfg
+    let endpoint = relay_cfg
         .config
         .tagoio_url
         .clone()
-        .unwrap_or("https://api.tago.io".to_string());
+        .unwrap_or_else(|| "https://api.tago.io".to_string());
 
     let query_string = format!(
         "?authorization_token={}",
         relay_cfg.config.authorization_token
     );
 
-    let endpoint = format!("{}/integrations/network/data{}", endpoint, query_string);
+    let endpoint = format!("{}/integration/network/data{}", endpoint, query_string);
 
-    let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "AUTHORIZATION",
@@ -60,50 +127,51 @@ pub async fn forward_buffer_messages(
         }
     }]);
 
-    let resp = client
-        .post(endpoint)
-        .headers(headers)
-        .json(&body)
-        .send()
-        .await?
-        .error_for_status()?
-        .text()
-        .await?;
+    match make_request(reqwest::Method::POST, &endpoint, headers, Some(body)).await {
+        Ok(response) => response,
+        Err(e) => {
+            return Err(Box::new(e));
+        }
+    };
 
-    println!("{:#?}", resp);
     Ok(())
 }
 
+/**
+ * Verify that the network token is valid
+ */
 pub async fn verify_network_token(relay_cfg: &RelayConfig) {
-    let endpoint = &relay_cfg
+    let endpoint = relay_cfg
         .config
         .tagoio_url
         .clone()
-        .unwrap_or("https://api.tago.io".to_string());
+        .unwrap_or_else(|| "https://api.tago.io".to_string());
 
     let endpoint = format!("{}/info", endpoint);
 
-    let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
-
     headers.insert(
-        AUTHORIZATION,
+        "AUTHORIZATION",
         HeaderValue::from_str(&relay_cfg.config.network_token).unwrap(),
     );
 
-    let resp = client.get(endpoint).headers(headers).send().await.unwrap();
+    let resp = make_request(reqwest::Method::GET, &endpoint, headers, None)
+        .await
+        .unwrap();
 
-    if !resp.status().is_success() {
-        panic!("Invalid Network Token");
+    if resp.is_empty() {
+        panic!("Invalid Network Token: Check your network token and TagoIO API UR and try again");
     }
 }
+/**
+ * Unit Test Section
+ */
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::schema::{ConfigFile, MQTT};
     use mockito::Matcher;
     use rumqttc::{Publish, QoS};
-    use std::str::FromStr;
     use tokio;
 
     fn get_test_relay_config(server: &mockito::Server) -> RelayConfig {
@@ -141,7 +209,7 @@ mod tests {
         );
 
         let _m = server
-            .mock("POST", "/integrations/network/data")
+            .mock("POST", "/integration/network/data")
             .match_query(Matcher::UrlEncoded(
                 "authorization_token".into(),
                 "test_authorization_token".into(),
