@@ -110,3 +110,142 @@ pub struct PublishRequest {
     pub qos: u8,
     pub retain: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_relay_config_new_with_defaults() {
+        let config = ConfigFile {
+            network_token: "network_token".to_string(),
+            authorization_token: "authorization_token".to_string(),
+            tagoio_url: None,
+            api_port: None,
+            mqtt: MQTT {
+                client_id: None,
+                tls_enabled: false,
+                address: "localhost".to_string(),
+                port: 1883,
+                subscribe: vec![],
+                username: None,
+                password: None,
+                authentication_certificate_file: None,
+            },
+        };
+
+        let relay_config = RelayConfig::new_with_defaults(None, config).unwrap();
+
+        assert_eq!(relay_config.id, "self-hosted");
+        assert_eq!(relay_config.profile_id.unwrap(), "self-hosted");
+        // assert_eq!(relay_config.state.unwrap(), InitiatedState::Stopped);
+        assert_eq!(
+            relay_config.config.tagoio_url.unwrap(),
+            "https://api.tago.io"
+        );
+        assert_eq!(relay_config.config.api_port.unwrap(), "3000");
+        assert_eq!(relay_config.config.mqtt.client_id.unwrap(), "tagoio-relay");
+        assert_eq!(
+            relay_config
+                .config
+                .mqtt
+                .authentication_certificate_file
+                .unwrap(),
+            "certs/ca.crt"
+        );
+    }
+
+    #[test]
+    fn test_config_file_with_defaults() {
+        let config = ConfigFile {
+            network_token: "network_token".to_string(),
+            authorization_token: "authorization_token".to_string(),
+            tagoio_url: None,
+            api_port: None,
+            mqtt: MQTT {
+                client_id: None,
+                tls_enabled: false,
+                address: "localhost".to_string(),
+                port: 1883,
+                subscribe: vec![],
+                username: None,
+                password: None,
+                authentication_certificate_file: None,
+            },
+        };
+
+        let config_with_defaults = config.with_defaults();
+
+        assert_eq!(
+            config_with_defaults.tagoio_url.unwrap(),
+            "https://api.tago.io"
+        );
+        assert_eq!(config_with_defaults.api_port.unwrap(), "3000");
+        assert_eq!(config_with_defaults.mqtt.client_id.unwrap(), "tagoio-relay");
+        assert_eq!(
+            config_with_defaults
+                .mqtt
+                .authentication_certificate_file
+                .unwrap(),
+            "certs/ca.crt"
+        );
+    }
+
+    #[test]
+    fn test_mqtt_with_defaults() {
+        let mqtt = MQTT {
+            client_id: None,
+            tls_enabled: false,
+            address: "localhost".to_string(),
+            port: 1883,
+            subscribe: vec![],
+            username: None,
+            password: None,
+            authentication_certificate_file: None,
+        };
+
+        let mqtt_with_defaults = mqtt.with_defaults();
+
+        assert_eq!(mqtt_with_defaults.client_id.unwrap(), "tagoio-relay");
+        assert_eq!(
+            mqtt_with_defaults.authentication_certificate_file.unwrap(),
+            "certs/ca.crt"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid MQTT address: invalid_address")]
+    fn test_invalid_mqtt_address() {
+        let mqtt = MQTT {
+            client_id: None,
+            tls_enabled: false,
+            address: "invalid_address".to_string(),
+            port: 1883,
+            subscribe: vec![],
+            username: None,
+            password: None,
+            authentication_certificate_file: None,
+        };
+
+        mqtt.with_defaults();
+    }
+
+    #[test]
+    fn test_is_valid_address() {
+        let mqtt = MQTT {
+            client_id: None,
+            tls_enabled: false,
+            address: "localhost".to_string(),
+            port: 1883,
+            subscribe: vec![],
+            username: None,
+            password: None,
+            authentication_certificate_file: None,
+        };
+
+        assert!(mqtt.is_valid_address("localhost"));
+        assert!(mqtt.is_valid_address("192.168.1.1"));
+        assert!(mqtt.is_valid_address("example.com"));
+        assert!(!mqtt.is_valid_address("invalid_address"));
+    }
+}
