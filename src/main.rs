@@ -9,7 +9,7 @@ use axum::{self, Json};
 use axum::{Extension, Router};
 use schema::ConfigFile;
 use services::mqttrelay::{run_mqtt_relay_connection, PublishMessage};
-use services::tagoio::get_relay_list;
+use services::tagoio::{get_relay_list, verify_network_token};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -36,6 +36,8 @@ async fn main() -> Result<()> {
     let relay_list = get_relay_list().await?;
     let relay_list = Arc::new(Mutex::new(relay_list));
 
+    verify_network_token(&relay_list.lock().unwrap()[0]).await;
+
     let tasks = Arc::new(RwLock::new(HashMap::new()));
 
     // Start the HTTP server
@@ -43,11 +45,19 @@ async fn main() -> Result<()> {
         .route("/publish", post(handle_publish))
         .layer(Extension(tasks.clone()));
 
-    let server = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", "3000"))
+    let api_port = CONFIG_FILE
+        .as_ref()
+        .unwrap()
+        .api_port
+        .clone()
+        .unwrap_or("3000".to_string());
+
+    let server = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", api_port))
         .await
         .unwrap();
 
     tokio::spawn(async move {
+        println!("Listening on: {}", server.local_addr().unwrap());
         axum::serve(server, app).await.unwrap();
     });
 
@@ -75,8 +85,8 @@ async fn main() -> Result<()> {
             .await
             .retain(|_, (task, _)| !task.is_finished());
 
-        // Relay will be restarted after 60 seconds
-        sleep(Duration::from_secs(60)).await;
+        // Relay will be restarted after 120 seconds
+        sleep(Duration::from_secs(120)).await;
     }
 }
 

@@ -56,7 +56,6 @@ pub async fn run_mqtt_relay_connection(
         }
     }
 
-    // TODO: Review this logic for picking the right credentials (tls/certificate VS tls/username+password VS no-tls/username+password)
     if username.is_some() {
         if !certificate_file.is_none() {
             mqttoptions.set_credentials(
@@ -69,7 +68,7 @@ pub async fn run_mqtt_relay_connection(
     }
 
     let mut backoff_retry_attempts = 0;
-    let backoff_max_retries = 2;
+    let backoff_max_retries = 15;
 
     loop {
         // TODO: Review the CAP later
@@ -84,10 +83,7 @@ pub async fn run_mqtt_relay_connection(
             Ok(notification) => {
                 println!("Received = {:?}", notification);
                 if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = notification {
-                    println!(
-                        "Connection to MQTT broker was successful for: {}",
-                        relay_cfg.id
-                    );
+                    println!("Connection to MQTT broker was successful");
 
                     // Reset backoff attempts
                     backoff_retry_attempts = 0;

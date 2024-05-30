@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use serde::{Deserialize, Serialize};
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct RelayConfig {
@@ -15,7 +15,7 @@ pub struct ConfigFile {
     pub network_token: String,
     pub authorization_token: String,
     pub tagoio_url: Option<String>, // Default is "https://api.tago.io"
-    pub port: Option<String>,       // Default is "3000"
+    pub api_port: Option<String>,   // Default is "3000"
     pub mqtt: MQTT,
 }
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug, Clone)]
@@ -48,9 +48,9 @@ impl RelayConfig {
         })
     }
 
-    pub fn is_running(&self) -> bool {
-        matches!(self.state, Some(InitiatedState::Running))
-    }
+    // pub fn is_running(&self) -> bool {
+    //     matches!(self.state, Some(InitiatedState::Running))
+    // }
 }
 
 impl ConfigFile {
@@ -58,8 +58,8 @@ impl ConfigFile {
         if self.tagoio_url.is_none() {
             self.tagoio_url = Some("https://api.tago.io".to_string());
         }
-        if self.port.is_none() {
-            self.port = Some("3000".to_string());
+        if self.api_port.is_none() {
+            self.api_port = Some("3000".to_string());
         }
         self.mqtt = self.mqtt.with_defaults();
         self
@@ -74,11 +74,23 @@ impl MQTT {
         if self.authentication_certificate_file.is_none() {
             self.authentication_certificate_file = Some("certs/ca.crt".to_string());
         }
+
+        if !self.is_valid_address(&self.address) {
+            panic!("Invalid MQTT address: {}", self.address);
+        }
+
         self
+    }
+
+    fn is_valid_address(&self, address: &str) -> bool {
+        let re =
+            Regex::new(r"^(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)$")
+                .unwrap();
+        re.is_match(address)
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub enum InitiatedState {
     Stopped,
     Running,
@@ -90,7 +102,7 @@ impl Default for InitiatedState {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(serde::Deserialize)]
 pub struct PublishRequest {
     pub topic: String,
     pub message: String,

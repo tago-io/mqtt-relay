@@ -1,5 +1,5 @@
 use std::time::Duration;
-use toml_env::{initialize, Args, AutoMapEnvArgs, Logging};
+use toml_env::{initialize, Args, AutoMapEnvArgs};
 
 use crate::schema::ConfigFile;
 
@@ -9,11 +9,15 @@ struct ConfigFileResponse {
 }
 
 pub fn fetch_config_file() -> Option<ConfigFile> {
-    let config_path = std::path::Path::new("./config.toml");
+    let env_config_path = std::env::var("CONFIG_PATH").ok();
+    let config_path = env_config_path
+        .as_deref()
+        .map(std::path::Path::new)
+        .unwrap_or_else(|| std::path::Path::new("./config.toml"));
 
     let config: Option<ConfigFileResponse> = initialize(Args {
         auto_map_env: Some(AutoMapEnvArgs::default()),
-        logging: Logging::StdOut,
+        // logging: Logging::StdOut,
         config_path: Some(&config_path),
         ..Args::default()
     })
@@ -23,8 +27,8 @@ pub fn fetch_config_file() -> Option<ConfigFile> {
 }
 
 pub fn calculate_backoff(attempt: u32) -> Duration {
-    let base_delay = Duration::from_secs(1);
-    let max_delay = Duration::from_secs(32);
+    let base_delay = Duration::from_secs(5);
+    let max_delay = Duration::from_secs(60);
     let delay = base_delay * 2u32.pow(attempt);
     std::cmp::min(delay, max_delay)
 }
