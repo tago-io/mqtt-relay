@@ -13,7 +13,7 @@ jobs:
     - name: Install Rust toolchain
       run: |
         rustup update --no-self-update stable
-        rustup component add --toolchain stable rustfmt rust-src
+        rustup component add --toolchain stable rustfmt 
         rustup default stable
 
     - name: Build
