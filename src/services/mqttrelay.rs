@@ -17,7 +17,7 @@ pub struct PublishMessage {
 }
 
 pub async fn run_mqtt_relay_connection(relay_cfg: Arc<RelayConfig>, publish_rx: mpsc::Receiver<PublishMessage>) {
-  println!("Running bridge task for client ID: {}", relay_cfg.id);
+  log::info!(target: "mqtt", "Running relay task for client ID: {}", relay_cfg.id);
 
   let publish_rx = Arc::new(Mutex::new(publish_rx));
 
@@ -30,28 +30,29 @@ pub async fn run_mqtt_relay_connection(relay_cfg: Arc<RelayConfig>, publish_rx: 
 
     subscribe_to_topics(&client, &relay_cfg).await;
 
+    let publish_rx_clone = Arc::clone(&publish_rx);
+    let publish_task = tokio::spawn(async move {
+      if let Err(e) = publish_messages(client, publish_rx_clone).await {
+        log::error!(target: "mqtt", "Failed to publish messages: {:?}", e);
+      }
+    });
+
     if let Err(e) = handle_mqtt_connection(&mut eventloop).await {
-      println!(
-        "Action Required: Failed to connect to MQTT broker. Error details: {:?}",
-        e.to_string()
-      );
+      log::error!(target: "error", "Failed to connect to MQTT broker. Error details: {:?}", e.to_string());
     } else {
+      log::info!(target: "mqtt", "Connected to MQTT broker successfully");
       backoff_retry_attempts = 0;
     }
-
-    let publish_rx_clone = Arc::clone(&publish_rx);
-    tokio::spawn(async move {
-      publish_messages(client, publish_rx_clone).await;
-    });
 
     process_incoming_messages(&mut eventloop, &relay_cfg).await;
 
     if backoff_retry_attempts >= BACKOFF_MAX_RETRIES {
-      eprintln!("Warning: Max retries reached. Exiting: {}", relay_cfg.id);
+      log::error!(target: "mqtt", "Max retries reached. Exiting: {}", relay_cfg.id);
       return;
     }
     let backoff_duration = calculate_backoff(backoff_retry_attempts);
-    println!("Retrying in {:?}", backoff_duration);
+    log::info!(target: "mqtt", "Retrying in {:?}", backoff_duration);
+    publish_task.abort();
     sleep(backoff_duration).await;
     backoff_retry_attempts += 1;
   }
@@ -113,10 +114,13 @@ async fn handle_mqtt_connection(eventloop: &mut rumqttc::EventLoop) -> Result<()
   }
 }
 
-async fn publish_messages(client: AsyncClient, publish_rx: Arc<Mutex<mpsc::Receiver<PublishMessage>>>) {
+async fn publish_messages(
+  client: AsyncClient,
+  publish_rx: Arc<Mutex<mpsc::Receiver<PublishMessage>>>,
+) -> anyhow::Result<()> {
   while let Some(publish_message) = publish_rx.lock().await.recv().await {
-    println!("[API] External published received on topic {}.", publish_message.topic);
-    client
+    log::info!(target: "mqtt", "[API] External published received on topic {}.", publish_message.topic);
+    if let Err(e) = client
       .publish(
         &publish_message.topic,
         QoS::AtLeastOnce,
@@ -124,17 +128,20 @@ async fn publish_messages(client: AsyncClient, publish_rx: Arc<Mutex<mpsc::Recei
         publish_message.message.as_bytes(),
       )
       .await
-      .unwrap();
+    {
+      log::error!(target: "mqtt", "Failed to publish message: {:?}", e);
+    }
   }
+  Ok(())
 }
 
 async fn process_incoming_messages(eventloop: &mut rumqttc::EventLoop, relay_cfg: &RelayConfig) {
   while let Ok(notification) = eventloop.poll().await {
     match notification {
       rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
-        println!("[Broker] Received message on topic {}", publish.topic);
+        log::info!(target: "mqtt", "[Broker] Received message on topic {}", publish.topic);
         if let Err(e) = crate::services::tagoio::forward_buffer_messages(&relay_cfg, &publish).await {
-          println!("Failed to forward message to TagoIO: {:?}", e.to_string());
+          log::error!(target: "mqtt", "Failed to forward message to TagoIO: {:?}", e.to_string());
         }
       }
       // rumqttc::Event::Incoming(rumqttc::Packet::SubAck(suback)) => {
