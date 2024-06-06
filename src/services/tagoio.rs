@@ -15,7 +15,7 @@ use crate::{schema::RelayConfig, CONFIG_FILE};
  */
 pub async fn get_relay_list() -> Result<Vec<Arc<RelayConfig>>, Error> {
   if let Some(config) = &*CONFIG_FILE {
-    println!("Config file loaded successfully");
+    log::info!(target: "info", "Config file loaded successfully");
     let relay = RelayConfig::new_with_defaults(None, config.clone()).unwrap();
     let relays: Vec<Arc<RelayConfig>> = vec![Arc::new(relay)];
 
@@ -124,6 +124,7 @@ pub async fn forward_buffer_messages(
   match make_request(reqwest::Method::POST, &endpoint, headers, Some(body)).await {
     Ok(response) => response,
     Err(e) => {
+      log::error!(target: "error", "Failed to forward buffered messages to TagoIO: {:?}", e);
       return Err(Box::new(e));
     }
   };
@@ -134,7 +135,7 @@ pub async fn forward_buffer_messages(
 /**
  * Verify that the network token is valid
  */
-pub async fn verify_network_token(relay_cfg: &RelayConfig) {
+pub async fn verify_network_token(relay_cfg: &RelayConfig) -> Result<(), CustomError> {
   let endpoint = relay_cfg
     .config
     .tagoio_url
@@ -149,13 +150,18 @@ pub async fn verify_network_token(relay_cfg: &RelayConfig) {
     HeaderValue::from_str(&relay_cfg.config.network_token).unwrap(),
   );
 
-  let resp = make_request(reqwest::Method::GET, &endpoint, headers, None)
-    .await
-    .unwrap();
+  let resp = make_request(reqwest::Method::GET, &endpoint, headers, None).await?;
 
   if resp.is_empty() {
-    panic!("Invalid Network Token: Check your network token and TagoIO API UR and try again");
+    log::error!(target: "error", "Invalid Network Token: Check your network token and TagoIO API URL and try again");
+    return Err(CustomError {
+      status: StatusCode::UNAUTHORIZED,
+      body: String::new(),
+      message: "Invalid Network Token".to_string(),
+    });
   }
+
+  Ok(())
 }
 /**
  * Unit Test Section
@@ -175,7 +181,7 @@ mod tests {
         network_token: "test_network_token".to_string(),
         authorization_token: "test_authorization_token".to_string(),
         tagoio_url: Some(server.url()),
-        api_port: Some("3000".to_string()),
+        downlink_port: Some("3000".to_string()),
         mqtt: MQTT {
           client_id: Some("test_client_id".to_string()),
           tls_enabled: false,
@@ -234,14 +240,19 @@ mod tests {
       .mock("GET", "/info")
       .match_header("AUTHORIZATION", "test_network_token")
       .with_status(200)
+      .with_body("Valid Token") // Ensure the response body is not empty
       .create_async()
       .await;
 
-    verify_network_token(&relay_cfg).await;
+    let result = verify_network_token(&relay_cfg).await;
+
+    if let Err(e) = &result {
+      println!("Error: {:?}", e);
+    }
+    assert!(result.is_ok());
   }
 
   #[tokio::test]
-  #[should_panic(expected = "Invalid Network Token")]
   async fn test_verify_network_token_invalid() {
     let mut server = mockito::Server::new_async().await;
     let relay_cfg = get_test_relay_config(&server);
@@ -253,6 +264,11 @@ mod tests {
       .create_async()
       .await;
 
-    verify_network_token(&relay_cfg).await;
+    let result = verify_network_token(&relay_cfg).await;
+    assert!(result.is_err());
+    if let Err(e) = result {
+      assert_eq!(e.status, StatusCode::UNAUTHORIZED);
+      assert_eq!(e.message, "Request failed with status: 401 Unauthorized");
+    }
   }
 }
