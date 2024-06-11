@@ -22,10 +22,12 @@ pub struct MQTT {
   pub tls_enabled: bool,
   pub address: String,
   pub port: u16,
-  pub subscribe: Vec<String>,                          // Default is ["/tago/#", "/device/+"]
-  pub username: Option<String>,                        // Default is "my-username"
-  pub password: Option<String>,                        // Default is "my-password"
-  pub authentication_certificate_file: Option<String>, // Default is "certs/ca.crt"
+  pub subscribe: Vec<String>,          // Default is ["/tago/#", "/device/+"]
+  pub username: Option<String>,        // Default is "my-username"
+  pub password: Option<String>,        // Default is "my-password"
+  pub broker_tls_ca: Option<String>,   // Default is "certs/ca.crt"
+  pub broker_tls_cert: Option<String>, // Default is "certs/client.crt"
+  pub broker_tls_key: Option<String>,  // Default is "certs/client.key"
 }
 
 impl RelayConfig {
@@ -120,7 +122,9 @@ mod tests {
         subscribe: vec![],
         username: None,
         password: None,
-        authentication_certificate_file: None,
+        broker_tls_ca: None,
+        broker_tls_cert: None,
+        broker_tls_key: None,
       },
     };
 
@@ -153,7 +157,9 @@ mod tests {
         subscribe: vec![],
         username: None,
         password: None,
-        authentication_certificate_file: None,
+        broker_tls_ca: None,
+        broker_tls_cert: None,
+        broker_tls_key: None,
       },
     };
 
@@ -174,7 +180,9 @@ mod tests {
       subscribe: vec!["/tago/#".to_string(), "/device/+".to_string()],
       username: None,
       password: None,
-      authentication_certificate_file: None,
+      broker_tls_ca: None,
+      broker_tls_cert: None,
+      broker_tls_key: None,
     };
 
     let mqtt_with_defaults = mqtt.with_defaults();
@@ -193,7 +201,9 @@ mod tests {
       subscribe: vec![],
       username: None,
       password: None,
-      authentication_certificate_file: None,
+      broker_tls_ca: None,
+      broker_tls_cert: None,
+      broker_tls_key: None,
     };
     mqtt.with_defaults();
   }

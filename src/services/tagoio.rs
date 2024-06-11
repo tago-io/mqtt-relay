@@ -14,7 +14,8 @@ use crate::{schema::RelayConfig, CONFIG_FILE};
  * To be improved later to support multiple relays
  */
 pub async fn get_relay_list() -> Result<Vec<Arc<RelayConfig>>, Error> {
-  if let Some(config) = &*CONFIG_FILE {
+  let config_file = CONFIG_FILE.read().unwrap();
+  if let Some(config) = &*config_file {
     log::info!(target: "info", "Config file loaded successfully");
     let relay = RelayConfig::new_with_defaults(None, config.clone()).unwrap();
     let relays: Vec<Arc<RelayConfig>> = vec![Arc::new(relay)];
@@ -146,7 +147,7 @@ pub async fn verify_network_token(relay_cfg: &RelayConfig) -> Result<(), CustomE
 
   let mut headers = HeaderMap::new();
   headers.insert(
-    "AUTHORIZATION",
+    "Authorization",
     HeaderValue::from_str(&relay_cfg.config.network_token).unwrap(),
   );
 
@@ -190,7 +191,9 @@ mod tests {
           subscribe: vec!["/tago/#".to_string(), "/device/+".to_string()],
           username: Some("test_username".to_string()),
           password: Some("test_password".to_string()),
-          authentication_certificate_file: Some("certs/ca.crt".to_string()),
+          broker_tls_ca: None,
+          broker_tls_cert: None,
+          broker_tls_key: None,
         },
       },
       profile_id: None,

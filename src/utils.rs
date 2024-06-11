@@ -1,3 +1,4 @@
+use home::home_dir;
 use std::time::Duration;
 use toml_env::{initialize, Args, AutoMapEnvArgs};
 
@@ -10,32 +11,39 @@ struct ConfigFileResponse {
 
 const DEFAULT_CONFIG: &str = include_str!("./default_config.toml");
 
-pub fn init_config() {
-  let env_config_path = std::env::var("CONFIG_PATH").ok();
+fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
+  let env_config_path = if user_path.is_none() {
+    std::env::var("CONFIG_PATH").ok()
+  } else {
+    user_path
+  };
+
   let config_path = env_config_path
     .as_deref()
     .map(std::path::PathBuf::from)
     .unwrap_or_else(|| {
-      let home_dir = std::env::var("HOME").expect("HOME environment variable not set");
-      let config_path_str = format!("{}/.config/.tagoio-mqtt-relay.toml", home_dir);
+      let home_dir = home_dir().expect("Failed to get home directory");
+      let config_path_str = format!("{}/.config/.tagoio-mqtt-relay.toml", home_dir.display());
       std::path::PathBuf::from(config_path_str)
     });
+
+  config_path
+}
+
+pub fn init_config(user_path: Option<impl AsRef<str>>) {
+  let config_path = get_config_path(user_path.map(|s| s.as_ref().to_string()));
+  if config_path.exists() {
+    log::error!(target: "error", "Configuration file already exists.");
+    std::process::exit(1);
+  }
 
   std::fs::write(&config_path, DEFAULT_CONFIG).expect("Failed to create default config file");
 
   println!("Configuration file created at {}", config_path.display());
 }
-pub fn fetch_config_file() -> Option<ConfigFile> {
-  let env_config_path = std::env::var("CONFIG_PATH").ok();
-  let config_path = env_config_path
-    .as_deref()
-    .map(std::path::PathBuf::from)
-    .unwrap_or_else(|| {
-      let home_dir = std::env::var("HOME").expect("HOME environment variable not set");
-      let config_path_str = format!("{}/.config/.tagoio-mqtt-relay.toml", home_dir);
-      std::path::PathBuf::from(config_path_str)
-    });
 
+pub fn fetch_config_file(user_path: Option<String>) -> Option<ConfigFile> {
+  let config_path = get_config_path(user_path);
   // If the config file doesn't exist, create it
   if !config_path.exists() {
     log::error!(target: "error", "Configuration file not found.");
@@ -66,4 +74,27 @@ pub fn calculate_backoff(attempt: u32) -> Duration {
   let max_delay = Duration::from_secs(60);
   let delay = base_delay * 2u32.pow(attempt);
   std::cmp::min(delay, max_delay)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::path::PathBuf;
+
+  #[test]
+  fn test_get_config_path_with_user_path() {
+    let user_path = Some(String::from("/custom/path/config.toml"));
+    let result = get_config_path(user_path);
+    assert_eq!(result, PathBuf::from("/custom/path/config.toml"));
+  }
+
+  #[test]
+  fn test_get_config_path_without_user_path() {
+    let user_path = None;
+    let result = get_config_path(user_path);
+    let home_dir = home_dir().expect("Failed to get home directory");
+    let expected_path = home_dir.join(".config/.tagoio-mqtt-relay.toml");
+
+    assert_eq!(result, expected_path);
+  }
 }

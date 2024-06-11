@@ -68,24 +68,38 @@ fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
 
   let username = &relay_cfg.config.mqtt.username;
   let password = &relay_cfg.config.mqtt.password;
-  let certificate_file = &relay_cfg.config.mqtt.authentication_certificate_file;
+  let ca_file = &relay_cfg.config.mqtt.broker_tls_ca;
+  let crt_file = &relay_cfg.config.mqtt.broker_tls_cert;
+  let key_file = &relay_cfg.config.mqtt.broker_tls_key;
 
   let mut mqttoptions = MqttOptions::new(&client_id, &relay_cfg.config.mqtt.address, relay_cfg.config.mqtt.port);
   mqttoptions.set_keep_alive(Duration::from_secs(30));
   mqttoptions.set_max_packet_size(1024 * 1024, 1024 * 1024); // 1mb in/out
 
   if relay_cfg.config.mqtt.tls_enabled || relay_cfg.config.mqtt.address.starts_with("ssl") {
-    if let Some(certificate) = certificate_file {
+    let client_auth = if let (Some(crt), Some(key)) = (crt_file, key_file) {
+      Some((crt.clone().into_bytes(), key.clone().into_bytes()))
+    } else {
+      None
+    };
+
+    if let Some(certificate) = ca_file {
       mqttoptions.set_transport(rumqttc::Transport::tls_with_config(TlsConfiguration::Simple {
         ca: certificate.clone().into_bytes(),
         alpn: None,
-        client_auth: None,
+        client_auth,
+      }));
+    } else if let Some(client_auth) = client_auth {
+      mqttoptions.set_transport(rumqttc::Transport::tls_with_config(TlsConfiguration::Simple {
+        ca: vec![],
+        alpn: None,
+        client_auth: Some(client_auth),
       }));
     }
   }
 
   if let Some(username) = username {
-    if certificate_file.is_some() {
+    if ca_file.is_some() {
       mqttoptions.set_credentials(
         username,
         password.as_ref().expect("Password must be provided if username is set"),

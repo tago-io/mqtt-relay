@@ -13,24 +13,45 @@ use axum::{
   routing::post,
   Extension, Json, Router,
 };
+use axum_server::tls_rustls::RustlsConfig;
+
+use dotenvy_macro::dotenv;
 use serde_json::json;
-use std::{collections::HashMap, error::Error, sync::Arc, time::Duration};
+use std::{collections::HashMap, error::Error, net::SocketAddr, sync::Arc, time::Duration};
 use tokio::{
   sync::{mpsc, RwLock},
   time::sleep,
 };
 
+/**
+ * Global constants
+ */
 const RESTART_DELAY_SECS: u64 = 120;
+
+#[cfg(debug_assertions)]
+const HOST_ADDRESS: &str = "127.0.0.1";
+
+#[cfg(not(debug_assertions))]
+const HOST_ADDRESS: &str = "::"; // ? External IPv4/IPv6 support
+
+async fn build_rustls_server_config() -> Arc<RustlsConfig> {
+  let cert = dotenv!("SERVER_CA_CERT").as_bytes().to_vec();
+  let key = dotenv!("SERVER_CA_KEY").as_bytes().to_vec();
+
+  let config = RustlsConfig::from_pem(cert, key).await.unwrap();
+
+  Arc::new(config)
+}
 
 /**
  * Start the MQTT Relay service
  */
-pub async fn start_relay(verbose: bool) -> Result<()> {
-  let log_level = if verbose {
-    "error,info,mqtt,network"
-  } else {
-    "error,info"
-  };
+pub async fn start_relay(verbose: Option<impl AsRef<str>>) -> Result<()> {
+  let log_level: String = verbose
+    .as_ref()
+    .map(|v| v.as_ref().to_string())
+    .unwrap_or_else(|| "error,info".to_string());
+
   env_logger::init_from_env(env_logger::Env::new().default_filter_or(log_level));
 
   // Simulate fetching relay configurations
@@ -52,24 +73,37 @@ pub async fn start_relay(verbose: bool) -> Result<()> {
     .route("/publish", post(handle_publish))
     .layer(Extension(tasks.clone()));
 
-  let api_port = CONFIG_FILE
-    .as_ref()
-    .unwrap()
-    .downlink_port
-    .clone()
-    .unwrap_or("3000".to_string());
-
-  let server = match tokio::net::TcpListener::bind(format!("0.0.0.0:{}", api_port)).await {
-    Ok(listener) => listener,
-    Err(e) => {
-      log::error!(target: "error", "Failed to bind to port {}: {}", api_port, e);
-      std::process::exit(1);
-    }
+  let api_port = {
+    let config_file = CONFIG_FILE.read().unwrap();
+    config_file
+      .as_ref()
+      .unwrap()
+      .downlink_port
+      .clone()
+      .unwrap_or("3000".to_string())
   };
 
+  let rustls_config = build_rustls_server_config().await;
+
+  // let listener = match tokio::net::TcpListener::bind(format!("{}:{}", HOST_ADDRESS, api_port)).await {
+  //   Ok(listener) => listener,
+  //   Err(e) => {
+  //     log::error!(target: "error", "Failed to bind to port {}: {}", api_port, e);
+  //     std::process::exit(1);
+  //   }
+  // };
+
+  let addr = SocketAddr::from((
+    HOST_ADDRESS.parse::<std::net::IpAddr>().unwrap(),
+    api_port.parse::<u16>().unwrap(),
+  ));
+
   tokio::spawn(async move {
-    log::info!(target: "info", "Listening on: {}", server.local_addr().unwrap());
-    axum::serve(server, app).await.unwrap();
+    log::info!(target: "info", "Starting Publish API on: {}", addr);
+    axum_server::tls_rustls::bind_rustls(addr, (*rustls_config).clone())
+      .serve(app.into_make_service())
+      .await
+      .unwrap();
   });
 
   // Start the relay tasks

@@ -12,4 +12,6 @@ port=1883
 subscribe=["/tago/#", "/tago/+"] # MQTT topics to subscribe to
 username="my-username"
 password="my-passowrd"
-authentication_certificate_file="certs/ca.crt" # Path to the CA certificate file. Alternative to username and password
+# broker_tls_ca="" # The CA certificate. Alternative to username and password
+# broker_tls_cert="" # The client certificate. 
+# broker_tls_key="" # The client key. 
