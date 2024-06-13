@@ -39,7 +39,7 @@ impl RelayConfig {
 
     Ok(RelayConfig {
       id,
-      config: config.with_defaults(),
+      config: config.with_defaults()?,
       profile_id,
       state,
     })
@@ -51,33 +51,34 @@ impl RelayConfig {
 }
 
 impl ConfigFile {
-  pub fn with_defaults(mut self) -> Self {
+  pub fn with_defaults(mut self) -> anyhow::Result<Self> {
     if self.tagoio_url.is_none() {
       self.tagoio_url = Some("https://api.tago.io".to_string());
     }
     if self.downlink_port.is_none() {
       self.downlink_port = Some("3000".to_string());
     }
-    self.mqtt = self.mqtt.with_defaults();
-    self
+    self.mqtt = self.mqtt.with_defaults()?;
+    Ok(self)
   }
 }
 
 impl MQTT {
-  pub fn with_defaults(mut self) -> Self {
+  pub fn with_defaults(mut self) -> anyhow::Result<Self> {
     if self.client_id.is_none() {
       self.client_id = Some("tagoio-relay".to_string());
     }
-
     if self.address != "localhost" && !self.is_valid_address(&self.address) {
-      panic!("Invalid MQTT address: {}", self.address);
+      return Err(anyhow::anyhow!("Invalid MQTT address: {}", self.address));
     }
-
-    self
+    Ok(self)
   }
 
   fn is_valid_address(&self, address: &str) -> bool {
-    let re = Regex::new(r"^(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)$").unwrap();
+    let re = Regex::new(
+      r"^(?:(?:ws|wss|mqtt|mqtts)://)?(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)$",
+    )
+    .unwrap();
     re.is_match(address)
   }
 }
@@ -163,7 +164,7 @@ mod tests {
       },
     };
 
-    let config_with_defaults = config.with_defaults();
+    let config_with_defaults = config.with_defaults().unwrap();
 
     assert_eq!(config_with_defaults.tagoio_url.unwrap(), "https://api.tago.io");
     assert_eq!(config_with_defaults.downlink_port.unwrap(), "3000");
@@ -185,7 +186,7 @@ mod tests {
       broker_tls_key: None,
     };
 
-    let mqtt_with_defaults = mqtt.with_defaults();
+    let mqtt_with_defaults = mqtt.with_defaults().unwrap();
 
     assert_eq!(mqtt_with_defaults.client_id.unwrap(), "tagoio-relay");
   }
@@ -205,7 +206,7 @@ mod tests {
       broker_tls_cert: None,
       broker_tls_key: None,
     };
-    mqtt.with_defaults();
+    mqtt.with_defaults().unwrap();
   }
 
   // #[test]

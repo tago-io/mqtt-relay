@@ -1,12 +1,14 @@
 use crate::{schema::RelayConfig, utils::calculate_backoff};
-use rumqttc::{AsyncClient, MqttOptions, QoS, TlsConfiguration};
+use rumqttc::{
+  tokio_rustls::rustls::{ClientConfig, RootCertStore},
+  AsyncClient, MqttOptions, QoS, TlsConfiguration,
+};
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::{
   sync::{mpsc, Mutex},
   time::{sleep, Duration},
 };
-
 const BACKOFF_MAX_RETRIES: u32 = 20;
 #[derive(Deserialize)]
 pub struct PublishMessage {
@@ -95,16 +97,25 @@ fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
         alpn: None,
         client_auth: Some(client_auth),
       }));
+    } else {
+      // Use rustls-native-certs to load root certificates from the operating system.
+      let mut root_cert_store = RootCertStore::empty();
+      root_cert_store
+        .add_parsable_certificates(rustls_native_certs::load_native_certs().expect("could not load platform certs"));
+
+      let client_config = ClientConfig::builder()
+        .with_root_certificates(Arc::new(root_cert_store))
+        .with_no_client_auth();
+
+      mqttoptions.set_transport(rumqttc::Transport::tls_with_config(client_config.into()));
     }
   }
 
   if let Some(username) = username {
-    if ca_file.is_some() {
-      mqttoptions.set_credentials(
-        username,
-        password.as_ref().expect("Password must be provided if username is set"),
-      );
-    }
+    mqttoptions.set_credentials(
+      username,
+      password.as_ref().expect("Password must be provided if username is set"),
+    );
   }
 
   mqttoptions

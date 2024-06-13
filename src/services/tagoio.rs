@@ -16,9 +16,10 @@ use crate::{schema::RelayConfig, CONFIG_FILE};
 pub async fn get_relay_list() -> Result<Vec<Arc<RelayConfig>>, Error> {
   let config_file = CONFIG_FILE.read().unwrap();
   if let Some(config) = &*config_file {
-    log::info!(target: "info", "Config file loaded successfully");
-    let relay = RelayConfig::new_with_defaults(None, config.clone()).unwrap();
+    let relay = RelayConfig::new_with_defaults(None, config.clone())?;
     let relays: Vec<Arc<RelayConfig>> = vec![Arc::new(relay)];
+
+    log::info!(target: "info", "Config file loaded successfully");
 
     return Ok(relays);
   }

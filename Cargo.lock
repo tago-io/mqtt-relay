@@ -2004,6 +2004,7 @@ dependencies = [
  "regex",
  "reqwest",
  "rumqttc",
+ "rustls-native-certs",
  "serde",
  "serde_json",
  "tokio",

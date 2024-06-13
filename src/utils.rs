@@ -11,6 +11,9 @@ struct ConfigFileResponse {
 
 const DEFAULT_CONFIG: &str = include_str!("./default_config.toml");
 
+/**
+ * Get the path to the configuration file
+ */
 fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
   let env_config_path = if user_path.is_none() {
     std::env::var("CONFIG_PATH").ok()
@@ -30,6 +33,9 @@ fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
   config_path
 }
 
+/**
+ * Initialize the configuration file
+ */
 pub fn init_config(user_path: Option<impl AsRef<str>>) {
   let config_path = get_config_path(user_path.map(|s| s.as_ref().to_string()));
   if config_path.exists() {
@@ -42,6 +48,9 @@ pub fn init_config(user_path: Option<impl AsRef<str>>) {
   println!("Configuration file created at {}", config_path.display());
 }
 
+/**
+ * Fetch the configuration file
+ */
 pub fn fetch_config_file(user_path: Option<String>) -> Option<ConfigFile> {
   let config_path = get_config_path(user_path);
   // If the config file doesn't exist, create it
