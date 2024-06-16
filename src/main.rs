@@ -72,16 +72,23 @@ async fn main() {
       init_config(config_path.as_deref());
     }
     Commands::Start { verbose, config_path } => {
+      let log_level: String = verbose
+        .as_ref()
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "error,info".to_string());
+
+      env_logger::init_from_env(env_logger::Env::new().default_filter_or(log_level));
+
       let config = utils::fetch_config_file(config_path.clone());
       if let Some(config) = config {
         *CONFIG_FILE.write().unwrap() = Some(config);
       } else {
-        eprintln!("Failed to load configuration file.");
+        log::error!("Failed to load configuration file.");
         std::process::exit(1);
       }
 
-      if let Err(e) = relay::start_relay(verbose.as_deref()).await {
-        eprintln!("Error starting relay: {}", e);
+      if let Err(e) = relay::start_relay().await {
+        log::error!("Error starting relay: {}", e);
       }
     }
   }

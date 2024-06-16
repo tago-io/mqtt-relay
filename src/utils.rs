@@ -45,7 +45,7 @@ pub fn init_config(user_path: Option<impl AsRef<str>>) {
 
   std::fs::write(&config_path, DEFAULT_CONFIG).expect("Failed to create default config file");
 
-  println!("Configuration file created at {}", config_path.display());
+  log::info!("Configuration file created at {}", config_path.display());
 }
 
 /**

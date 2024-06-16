@@ -1,0 +1,8 @@
+services:
+  my-eclipse:
+    image: tagoio/tago-relay:latest
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./config.toml:/root/.config/.tagoio-mqtt-relay.toml

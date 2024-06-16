@@ -131,7 +131,7 @@ async fn handle_mqtt_connection(eventloop: &mut rumqttc::EventLoop) -> Result<()
   match eventloop.poll().await {
     Ok(notification) => {
       if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = notification {
-        println!("Connection to MQTT broker was successful");
+        log::info!("Connection to MQTT broker was successful");
       }
       Ok(())
     }

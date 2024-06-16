@@ -1,0 +1,66 @@
+name: Build for mac-x64
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: macos-11
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup update --no-self-update stable
+          rustup component add --toolchain stable rustfmt 
+          rustup default stable
+
+      # Build the modules
+      - name: Build
+        run: cargo build --verbose --release
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      # # Sign the executable
+      # - name: Codesign binary
+      #   env:
+      #     MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      #     MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+      #     MACOS_FULL_IDENTITY: ${{ secrets.MACOS_FULL_IDENTITY }}
+      #   run: |
+      #     echo $MACOS_CERTIFICATE | openssl base64 -d -A > certificate.p12
+      #     security create-keychain -p $MACOS_CERTIFICATE_PWD build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p $MACOS_CERTIFICATE_PWD build.keychain
+      #     security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD build.keychain
+      #     cd __build__binary__
+      #     /usr/bin/codesign -f -s "$MACOS_FULL_IDENTITY" --entitlements ../.github/macos-build-entitlements.plist --options=runtime --timestamp ./tagocore
+      #     zip ./tagocore.zip ./tagocore
+      #     /usr/bin/codesign -f -s "$MACOS_FULL_IDENTITY" --options=runtime --timestamp ./tagocore.zip
+
+      # # Notarize app using xcrun altool
+      # - name: Notarize binary
+      #   env:
+      #     MACOS_DEVELOPER_EMAIL: ${{ secrets.MACOS_DEVELOPER_EMAIL }}
+      #     MACOS_DEVELOPER_PWD: ${{ secrets.MACOS_DEVELOPER_PWD }}
+      #     MACOS_BUNDLE_ID: ${{ secrets.MACOS_BUNDLE_ID }}
+      #     MACOS_ASC_PROVIDER: ${{ secrets.MACOS_ASC_PROVIDER }}
+      #   run: xcrun altool --notarize-app --primary-bundle-id "$MACOS_BUNDLE_ID" -u "$MACOS_DEVELOPER_EMAIL" -p "$MACOS_DEVELOPER_PWD" --asc-provider "$MACOS_ASC_PROVIDER" -f ./__build__binary__/tagocore.zip
+
+      # Zip the binary
+      - name: Generate tar.gz
+        run: |
+          cd __build__binary__
+          unzip -o tagocore.zip
+          tar cvf - tagocore | gzip > ../tagocore-mac-x64.tar.gz
+
+      # Upload the zip file as an artifact
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: mqttrelay-macos-x64
+          path: ../tagocore.zip

@@ -20,6 +20,8 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
 COPY --from=build ${TAGOIO_SOURCE_FOLDER}/target/release/tagoio-mqtt-relay .
-COPY --from=build ${TAGOIO_SOURCE_FOLDER}/config.toml config.toml
+
+RUN /tago-io/tagoio-mqtt-relay init
 
 ENTRYPOINT ["/tago-io/tagoio-mqtt-relay"]
+CMD ["start"]

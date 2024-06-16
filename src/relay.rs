@@ -13,7 +13,13 @@ use axum::{
   routing::post,
   Extension, Json, Router,
 };
-use axum_server::tls_rustls::RustlsConfig;
+
+use axum_server::tls_openssl::OpenSSLConfig;
+use openssl::{
+  pkey::PKey,
+  ssl::{SslAcceptor, SslMethod, SslVerifyMode},
+  x509::X509,
+};
 
 use dotenvy_macro::dotenv;
 use serde_json::json;
@@ -34,26 +40,29 @@ const HOST_ADDRESS: &str = "127.0.0.1";
 #[cfg(not(debug_assertions))]
 const HOST_ADDRESS: &str = "::"; // ? External IPv4/IPv6 support
 
-async fn build_rustls_server_config() -> Arc<RustlsConfig> {
-  let cert = dotenv!("SERVER_CA_CERT").as_bytes().to_vec();
-  let key = dotenv!("SERVER_CA_KEY").as_bytes().to_vec();
+fn create_ssl_acceptor() -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack> {
+  let cert = dotenv!("SERVER_SSL_CERT").as_bytes();
+  let key = dotenv!("SERVER_SSL_KEY").as_bytes();
+  let ca = dotenv!("SERVER_SSL_CA").as_bytes();
 
-  let config = RustlsConfig::from_pem(cert, key).await.unwrap();
+  let cert = X509::from_pem(cert)?;
+  let key = PKey::private_key_from_pem(key)?;
+  let ca = X509::from_pem(ca)?;
 
-  Arc::new(config)
+  let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
+  acceptor.set_private_key(&key)?;
+  acceptor.set_certificate(&cert)?;
+  acceptor.add_extra_chain_cert(ca)?;
+  acceptor.check_private_key()?;
+
+  acceptor.set_verify(SslVerifyMode::PEER | SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+  Ok(Arc::new(acceptor.build()))
 }
 
 /**
  * Start the MQTT Relay service
  */
-pub async fn start_relay(verbose: Option<impl AsRef<str>>) -> Result<()> {
-  let log_level: String = verbose
-    .as_ref()
-    .map(|v| v.as_ref().to_string())
-    .unwrap_or_else(|| "error,info".to_string());
-
-  env_logger::init_from_env(env_logger::Env::new().default_filter_or(log_level));
-
+pub async fn start_relay() -> Result<()> {
   // Simulate fetching relay configurations
   let relay_list = get_relay_list().await?;
   let relay_list = Arc::new(RwLock::new(relay_list));
@@ -83,7 +92,8 @@ pub async fn start_relay(verbose: Option<impl AsRef<str>>) -> Result<()> {
       .unwrap_or("3000".to_string())
   };
 
-  let rustls_config = build_rustls_server_config().await;
+  let test = create_ssl_acceptor().unwrap();
+  let acceptor = OpenSSLConfig::from_acceptor(test);
 
   // let listener = match tokio::net::TcpListener::bind(format!("{}:{}", HOST_ADDRESS, api_port)).await {
   //   Ok(listener) => listener,
@@ -100,7 +110,7 @@ pub async fn start_relay(verbose: Option<impl AsRef<str>>) -> Result<()> {
 
   tokio::spawn(async move {
     log::info!(target: "info", "Starting Publish API on: {}", addr);
-    axum_server::tls_rustls::bind_rustls(addr, (*rustls_config).clone())
+    axum_server::bind_openssl(addr, acceptor)
       .serve(app.into_make_service())
       .await
       .unwrap();

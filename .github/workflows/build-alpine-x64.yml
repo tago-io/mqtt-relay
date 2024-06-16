@@ -1,0 +1,44 @@
+name: Build for alpine-x64
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout the code
+        uses: actions/checkout@v1
+
+      # Setup Docker for cross platform build
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      # Setup Docker for cross platform build
+      - name: Set up docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+        # Build docker image
+      - name: Run build
+        run: docker buildx build --load --platform linux/arm64 -f ./docker/Dockerfile.alpine-arm64 . -t tagocore-container
+
+      # Pull binary out of docker container
+      - name: Extract tagocore binary out of docker
+        run: docker cp $(docker create tagocore-container):/usr/src/app/__build__binary__/tagocore ./tagocore
+
+      # Set binary as executable
+      - name: Chmod
+        run: chmod +x ./tagocore
+
+      # Zip the binary
+      - name: Generate tar.gz
+        run: tar cvf - tagocore | gzip > ./tagocore-alpine-arm64.tar.gz
+
+      # Upload the zip file as an artifact
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: mqttrelay-alpine-arm64
+          path: ../tagocore.zip
