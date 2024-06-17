@@ -18,7 +18,7 @@ use axum_server::tls_openssl::OpenSSLConfig;
 use openssl::{
   pkey::PKey,
   ssl::{SslAcceptor, SslMethod, SslVerifyMode},
-  x509::X509,
+  x509::{store::X509StoreBuilder, X509},
 };
 
 use dotenvy_macro::dotenv;
@@ -41,6 +41,7 @@ const HOST_ADDRESS: &str = "127.0.0.1";
 const HOST_ADDRESS: &str = "::"; // ? External IPv4/IPv6 support
 
 fn create_ssl_acceptor() -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack> {
+  // Certificates contents are stored in the environment variables
   let cert = dotenv!("SERVER_SSL_CERT").as_bytes();
   let key = dotenv!("SERVER_SSL_KEY").as_bytes();
   let ca = dotenv!("SERVER_SSL_CA").as_bytes();
@@ -52,8 +53,19 @@ fn create_ssl_acceptor() -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack>
   let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
   acceptor.set_private_key(&key)?;
   acceptor.set_certificate(&cert)?;
-  acceptor.add_extra_chain_cert(ca)?;
+  // acceptor.add_client_ca(&ca)?;
   acceptor.check_private_key()?;
+
+  // Create a new X509Store and add the CA certificate to it
+  let mut store_builder = X509StoreBuilder::new()?;
+  store_builder.add_cert(ca.clone())?;
+  let store = store_builder.build();
+
+  // Set the CA store for the acceptor
+  acceptor.set_cert_store(store);
+
+  // Add the CA certificate as a client CA
+  acceptor.add_client_ca(&ca)?;
 
   acceptor.set_verify(SslVerifyMode::PEER | SslVerifyMode::FAIL_IF_NO_PEER_CERT);
   Ok(Arc::new(acceptor.build()))

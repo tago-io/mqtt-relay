@@ -38,9 +38,9 @@ jobs:
       #     security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
       #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD build.keychain
       #     cd __build__binary__
-      #     /usr/bin/codesign -f -s "$MACOS_FULL_IDENTITY" --entitlements ../.github/macos-build-entitlements.plist --options=runtime --timestamp ./tagocore
-      #     zip ./tagocore.zip ./tagocore
-      #     /usr/bin/codesign -f -s "$MACOS_FULL_IDENTITY" --options=runtime --timestamp ./tagocore.zip
+      #     /usr/bin/codesign -f -s "$MACOS_FULL_IDENTITY" --entitlements ../.github/macos-build-entitlements.plist --options=runtime --timestamp ./mqttrelay
+      #     zip ./mqttrelay.zip ./mqttrelay
+      #     /usr/bin/codesign -f -s "$MACOS_FULL_IDENTITY" --options=runtime --timestamp ./mqttrelay.zip
 
       # # Notarize app using xcrun altool
       # - name: Notarize binary
@@ -49,18 +49,17 @@ jobs:
       #     MACOS_DEVELOPER_PWD: ${{ secrets.MACOS_DEVELOPER_PWD }}
       #     MACOS_BUNDLE_ID: ${{ secrets.MACOS_BUNDLE_ID }}
       #     MACOS_ASC_PROVIDER: ${{ secrets.MACOS_ASC_PROVIDER }}
-      #   run: xcrun altool --notarize-app --primary-bundle-id "$MACOS_BUNDLE_ID" -u "$MACOS_DEVELOPER_EMAIL" -p "$MACOS_DEVELOPER_PWD" --asc-provider "$MACOS_ASC_PROVIDER" -f ./__build__binary__/tagocore.zip
+      #   run: xcrun altool --notarize-app --primary-bundle-id "$MACOS_BUNDLE_ID" -u "$MACOS_DEVELOPER_EMAIL" -p "$MACOS_DEVELOPER_PWD" --asc-provider "$MACOS_ASC_PROVIDER" -f ./__build__binary__/mqttrelay.zip
 
       # Zip the binary
       - name: Generate tar.gz
         run: |
-          cd __build__binary__
-          unzip -o tagocore.zip
-          tar cvf - tagocore | gzip > ../tagocore-mac-x64.tar.gz
+          cd target/release
+          tar cvf - tago-relay | gzip > ../tago-relay-mac-x64.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: mqttrelay-macos-x64
-          path: ../tagocore.zip
+          name: tago-relay-macos-x64
+          path: ../tago-relay-mac-x64.tar.gz
