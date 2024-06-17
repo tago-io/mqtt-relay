@@ -171,7 +171,7 @@ pub async fn verify_network_token(relay_cfg: &RelayConfig) -> Result<(), CustomE
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::schema::{ConfigFile, MQTT};
+  use crate::schema::{ConfigFile, Mqtt};
   use mockito::Matcher;
   use rumqttc::{Publish, QoS};
   use tokio;
@@ -184,7 +184,7 @@ mod tests {
         authorization_token: "test_authorization_token".to_string(),
         tagoio_url: Some(server.url()),
         downlink_port: Some("3000".to_string()),
-        mqtt: MQTT {
+        mqtt: Mqtt {
           client_id: Some("test_client_id".to_string()),
           tls_enabled: false,
           address: "localhost".to_string(),

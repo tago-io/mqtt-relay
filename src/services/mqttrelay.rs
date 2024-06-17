@@ -74,7 +74,7 @@ fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
   let crt_file = &relay_cfg.config.mqtt.broker_tls_cert;
   let key_file = &relay_cfg.config.mqtt.broker_tls_key;
 
-  let mut mqttoptions = MqttOptions::new(&client_id, &relay_cfg.config.mqtt.address, relay_cfg.config.mqtt.port);
+  let mut mqttoptions = MqttOptions::new(client_id, &relay_cfg.config.mqtt.address, relay_cfg.config.mqtt.port);
   mqttoptions.set_keep_alive(Duration::from_secs(30));
   mqttoptions.set_max_packet_size(1024 * 1024, 1024 * 1024); // 1mb in/out
 
@@ -162,17 +162,11 @@ async fn publish_messages(
 
 async fn process_incoming_messages(eventloop: &mut rumqttc::EventLoop, relay_cfg: &RelayConfig) {
   while let Ok(notification) = eventloop.poll().await {
-    match notification {
-      rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
-        log::info!(target: "mqtt", "[Broker] Received message on topic {}", publish.topic);
-        if let Err(e) = crate::services::tagoio::forward_buffer_messages(&relay_cfg, &publish).await {
-          log::error!(target: "mqtt", "Failed to forward message to TagoIO: {:?}", e.to_string());
-        }
+    if let rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) = notification {
+      log::info!(target: "mqtt", "[Broker] Received message on topic {}", publish.topic);
+      if let Err(e) = crate::services::tagoio::forward_buffer_messages(relay_cfg, &publish).await {
+        log::error!(target: "mqtt", "Failed to forward message to TagoIO: {:?}", e.to_string());
       }
-      // rumqttc::Event::Incoming(rumqttc::Packet::SubAck(suback)) => {
-      //     println!("Subscription acknowledged: {:?}", suback);
-      // }
-      _ => {}
     }
   }
 }

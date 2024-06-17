@@ -174,10 +174,11 @@ impl IntoResponse for JsonError {
   }
 }
 
+type TaskMap = HashMap<String, (tokio::task::JoinHandle<()>, mpsc::Sender<PublishMessage>)>;
+type SharedTaskMap = Arc<RwLock<TaskMap>>;
+
 async fn handle_publish(
-  Extension(tasks): Extension<
-    Arc<RwLock<HashMap<String, (tokio::task::JoinHandle<()>, mpsc::Sender<PublishMessage>)>>>,
-  >,
+  Extension(tasks): Extension<SharedTaskMap>,
   payload: Result<Json<PublishRequest>, JsonRejection>,
 ) -> Result<impl IntoResponse, JsonError> {
   let payload = match payload {

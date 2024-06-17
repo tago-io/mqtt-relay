@@ -14,10 +14,10 @@ pub struct ConfigFile {
   pub authorization_token: String,
   pub tagoio_url: Option<String>,    // Default is "https://api.tago.io"
   pub downlink_port: Option<String>, // Default is "3000"
-  pub mqtt: MQTT,
+  pub mqtt: Mqtt,
 }
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug, Clone)]
-pub struct MQTT {
+pub struct Mqtt {
   pub client_id: Option<String>, // Default is "tagoio-relay"
   pub tls_enabled: bool,
   pub address: String,
@@ -63,7 +63,7 @@ impl ConfigFile {
   }
 }
 
-impl MQTT {
+impl Mqtt {
   pub fn with_defaults(mut self) -> anyhow::Result<Self> {
     if self.client_id.is_none() {
       self.client_id = Some("tagoio-relay".to_string());
@@ -89,12 +89,6 @@ pub enum InitiatedState {
   Running,
 }
 
-impl Default for InitiatedState {
-  fn default() -> Self {
-    InitiatedState::Stopped
-  }
-}
-
 #[derive(serde::Deserialize)]
 pub struct PublishRequest {
   pub topic: String,
@@ -115,7 +109,7 @@ mod tests {
       authorization_token: "authorization_token".to_string(),
       tagoio_url: None,
       downlink_port: None,
-      mqtt: MQTT {
+      mqtt: Mqtt {
         client_id: None,
         tls_enabled: false,
         address: "localhost".to_string(),
@@ -150,7 +144,7 @@ mod tests {
       authorization_token: "authorization_token".to_string(),
       tagoio_url: None,
       downlink_port: None,
-      mqtt: MQTT {
+      mqtt: Mqtt {
         client_id: None,
         tls_enabled: false,
         address: "localhost".to_string(),
@@ -173,7 +167,7 @@ mod tests {
 
   #[test]
   fn test_mqtt_with_defaults() {
-    let mqtt = MQTT {
+    let mqtt = Mqtt {
       client_id: None,
       tls_enabled: false,
       address: "localhost".to_string(),
@@ -194,7 +188,7 @@ mod tests {
   #[test]
   #[should_panic(expected = "Invalid MQTT address: invalid_address")]
   fn test_invalid_mqtt_address() {
-    let mqtt = MQTT {
+    let mqtt = Mqtt {
       client_id: None,
       tls_enabled: false,
       address: "invalid_address".to_string(),
