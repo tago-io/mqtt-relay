@@ -1,6 +1,7 @@
 use regex::Regex;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct RelayConfig {
   pub id: String,
   pub config: ConfigFile,
