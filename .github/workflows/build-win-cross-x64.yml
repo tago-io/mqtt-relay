@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     environment: PROD
     env:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
@@ -32,18 +32,15 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      # Install vcpkg
-      - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-      - uses: ilammy/setup-nasm@v1
-      # - run: choco install openssl --no-progress
+      - name: Install Cross
+        shell: bash
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall --no-confirm cross
 
       # Build the modules
       - name: Build Binary
-        run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
-
-      # Run tests
-      - name: Run tests
-        run: cargo test --verbose
+        run: cross build --verbose --locked --release --target ${{ env.TARGET }}
 
       # Zip the binary
       - name: Generate zip
