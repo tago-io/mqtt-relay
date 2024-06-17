@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: PROD
     env:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
@@ -30,7 +30,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Create empty .env file
-        run: touch .env
+        run: New-Item -ItemType File -Path .env
 
       - name: Install Cross
         run: cargo install cross

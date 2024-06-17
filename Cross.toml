@@ -1,0 +1,2 @@
+[target.x86_64-pc-windows-msvc]
+image = "rustembedded/cross:x86_64-pc-windows-msvc-0.2.1"
