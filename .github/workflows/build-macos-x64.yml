@@ -8,23 +8,21 @@ env:
 jobs:
   build:
     runs-on: macos-11
+    environment: PROD
+    env:
+      SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
 
     steps:
       # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        run: |
-          rustup update --no-self-update stable
-          rustup component add --toolchain stable rustfmt 
-          rustup default stable
-
-      - name: Create .env file
-        run: |
-          echo "SERVER_SSL_CA=${{ secrets.SERVER_SSL_CA }}" >> .env
-          echo "SERVER_SSL_CERT=${{ secrets.SERVER_SSL_CERT }}" >> .env
-          echo "SERVER_SSL_KEY=${{ secrets.SERVER_SSL_KEY }}" >> .env
+      - name: Install Rust toolchain and components
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
       # Build the modules
       - name: Build
