@@ -33,21 +33,11 @@ jobs:
         run: touch .env
 
       # Install vcpkg
-      - name: Install vcpkg
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-
-      # Install OpenSSL using vcpkg
-      - name: Install OpenSSL
-        run: .\vcpkg\vcpkg.exe install openssl:x64-windows-static-md
-
-      # Set VCPKG_ROOT environment variable
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
+      - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - run: vcpkg install openssl:x64-windows-static-md
+      - uses: ilammy/setup-nasm@v1
 
       # Build the modules
-      - uses: ilammy/setup-nasm@v1
       - name: Build Binary
         run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
 
