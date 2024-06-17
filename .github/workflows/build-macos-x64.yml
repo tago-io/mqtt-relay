@@ -24,6 +24,9 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Create empty .env file
+        run: touch .env
+
       # Build the modules
       - name: Build
         run: cargo build --verbose --release
