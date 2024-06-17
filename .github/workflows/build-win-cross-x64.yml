@@ -1,4 +1,4 @@
-name: Build for win-x64
+name: Build cross for win-x64
 
 on: workflow_dispatch
 
