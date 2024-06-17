@@ -31,9 +31,9 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "SERVER_SSL_CA=${{ secrets.SERVER_SSL_CA }}" >> .env
-          echo "SERVER_SSL_CERT=${{ secrets.SERVER_SSL_CERT }}" >> .env
-          echo "SERVER_SSL_KEY=${{ secrets.SERVER_SSL_KEY }}" >> .env
+          echo "SERVER_SSL_CA=\"${{ secrets.SERVER_SSL_CA }}\"" >> .env
+          echo "SERVER_SSL_CERT=\"${{ secrets.SERVER_SSL_CERT }}\"" >> .env
+          echo "SERVER_SSL_KEY=\"${{ secrets.SERVER_SSL_KEY }}\"" >> .env
 
       - name: Build
         run: cargo build --verbose
