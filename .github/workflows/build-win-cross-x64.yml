@@ -33,10 +33,7 @@ jobs:
         run: touch .env
 
       - name: Install Cross
-        shell: bash
-        run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall --no-confirm cross
+        run: cargo install cross
 
       # Build the modules
       - name: Build Binary
