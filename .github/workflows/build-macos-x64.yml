@@ -4,6 +4,8 @@ on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
+  TARGET: aarch64-apple-darwin
+  FILENAME: tagoio-relay-mac-x64
 
 jobs:
   build:
@@ -19,25 +21,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
       - name: Install Rust toolchain and components
         uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ env.TARGET }}
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Create empty .env file
         run: touch .env
 
       # Build the modules
-      - name: Cargo build
-        run: cargo build --verbose --release --all-features
+      - name: Build Binary
+        run: cargo build --verbose --locked --release
 
       # Run tests
       - name: Run tests
@@ -74,11 +71,11 @@ jobs:
       - name: Generate tar.gz
         run: |
           cd target/release
-          tar cvf - tagoio-relay | gzip > ../../tagoio-relay-mac-x64.tar.gz
+          tar cvf - tagoio-relay | gzip > ../../${{ env.FILENAME }}.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: tagoio-relay-macos-x64
-          path: ./tagoio-relay-mac-x64.tar.gz
+          name: ${{ env.FILENAME }}
+          path: ./${{ env.FILENAME }}.tar.gz

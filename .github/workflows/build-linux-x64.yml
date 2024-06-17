@@ -1,15 +1,15 @@
-name: Build for win-x64
+name: Build for linux-x64
 
 on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
-  TARGET: x86_64-pc-windows-msvc
-  FILENAME: tagoio-relay-win-x64
+  TARGET: x86_64-unknown-linux-gnu
+  FILENAME: tagoio-relay-linux-x64
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     environment: PROD
     env:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
@@ -34,21 +34,20 @@ jobs:
 
       # Build the modules
       - name: Build Binary
-        run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
+        run: cargo build --verbose --locked --release
 
       # Run tests
       - name: Run tests
         run: cargo test --verbose
-
       # Zip the binary
-      - name: Generate zip
+      - name: Generate tar.gz
         run: |
-          cd target/${{ env.TARGET }}/release
-          Compress-Archive -Path tagoio-relay.exe -DestinationPath ../../${{ env.FILENAME }}.zip
+          cd target/release
+          tar cvf - tagoio-relay | gzip > ../../${{ env.FILENAME }}.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.FILENAME }}
-          path: ./${{ env.FILENAME }}.zip
+          path: ./${{ env.FILENAME }}.tar.gz
