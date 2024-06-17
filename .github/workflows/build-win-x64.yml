@@ -34,7 +34,7 @@ jobs:
 
       # Install vcpkg
       - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-      - run: vcpkg install openssl:x64-windows-static-md
+      - run: choco install openssl
       - uses: ilammy/setup-nasm@v1
 
       # Build the modules
