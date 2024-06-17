@@ -1,8 +1,6 @@
 name: Build for linux-arm64
 
-on:
-  release:
-    types: [published]
+on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,13 +32,14 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      # Build the modules
-      - name: Build Binary
-        run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
-
-      # Run tests
-      - name: Run tests
-        run: cargo test --verbose
+      - uses: ilammy/setup-nasm@v1
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "build"
+          target: "${{ env.TARGET }}"
+          toolchain: "stable"
+          args: "--locked --release"
 
       # Zip the binary
       - name: Generate tar.gz
