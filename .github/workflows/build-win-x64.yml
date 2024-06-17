@@ -40,7 +40,7 @@ jobs:
 
       # Install OpenSSL using vcpkg
       - name: Install OpenSSL
-        run: .\vcpkg\vcpkg.exe install openssl:x64-windows
+        run: .\vcpkg\vcpkg.exe install openssl:x64-windows-static-md
 
       # Set VCPKG_ROOT environment variable
       - name: Set VCPKG_ROOT
