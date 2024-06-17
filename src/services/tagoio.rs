@@ -198,7 +198,6 @@ mod tests {
         },
       },
       profile_id: None,
-      state: None,
     }
   }
 

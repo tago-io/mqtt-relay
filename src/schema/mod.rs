@@ -5,7 +5,6 @@ pub struct RelayConfig {
   pub id: String,
   pub config: ConfigFile,
   pub profile_id: Option<String>,
-  pub state: Option<InitiatedState>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug, Clone)]
@@ -35,13 +34,11 @@ impl RelayConfig {
     // Ensure that profile_id and state are not None
     let id = "self-hosted".to_string();
     let profile_id = Some(profile_id.unwrap_or_else(|| "self-hosted".to_string()));
-    let state: Option<InitiatedState> = Some(InitiatedState::Stopped);
 
     Ok(RelayConfig {
       id,
       config: config.with_defaults()?,
       profile_id,
-      state,
     })
   }
 
@@ -81,12 +78,6 @@ impl Mqtt {
     .unwrap();
     re.is_match(address)
   }
-}
-
-#[derive(Debug, Clone, serde::Deserialize)]
-pub enum InitiatedState {
-  Stopped,
-  Running,
 }
 
 #[derive(serde::Deserialize)]
