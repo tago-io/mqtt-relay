@@ -8,31 +8,41 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-index-
+
+      - name: Install Rust toolchain and components
         run: |
           rustup update --no-self-update stable
-          rustup component add --toolchain stable rustfmt 
+          rustup component add --toolchain stable rustfmt clippy
           rustup default stable
 
-      - name: Set up environment variables
+          - name: Create .env file
+          run: |
+            echo "SERVER_SSL_CA=${{ secrets.SERVER_SSL_CA }}" >> .env
+            echo "SERVER_SSL_CERT=${{ secrets.SERVER_SSL_CERT }}" >> .env
+            echo "SERVER_SSL_KEY=${{ secrets.SERVER_SSL_KEY }}" >> .env
+
+      - name: Build and Test
         run: |
-          echo "SERVER_SSL_CA=${{ secrets.SERVER_SSL_CA }}" >> $GITHUB_ENV
-          echo "SERVER_SSL_CERT=${{ secrets.SERVER_SSL_CERT }}" >> $GITHUB_ENV
-          echo "SERVER_SSL_KEY=${{ secrets.SERVER_SSL_KEY }}" >> $GITHUB_ENV
-
-      - name: Build
-        run: cargo build --verbose
-
-      - name: Run tests
-        run: cargo test --verbose
-
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
-
-      - name: Run fmt check
-        run: cargo fmt -- --check
+          cargo build --verbose
+          cargo test --verbose
+          cargo clippy -- -D warnings
+          cargo fmt -- --check
