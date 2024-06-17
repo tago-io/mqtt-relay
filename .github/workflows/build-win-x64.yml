@@ -5,31 +5,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: PROD
+    env:
+      SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
 
     steps:
       # Checkout the code
       - name: Checkout the code
         uses: actions/checkout@v1
 
-      # Install dependencies
-      - name: Install dependencies
-        run: npm install
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
-      # Build the modules
-      - name: Run build
-        run: npm run build
-
-      # Manually copy the bin file of sdk to the .bin folder to use the local copy of the sdk
-      - name: Override tcore-plugin .bin file
-        run: cd ./node_modules/.bin; ln -s ../../packages/tcore-sdk/build/Bin/Bin.js tcore-plugin; chmod +x tcore-plugin; cd ../../
-
-      # Pack Plugin Store, TagoIO Integration, and Local Filesystem into a .tcore file
-      - name: Pack built-in plugins
-        run: npm run pack
-
-      # Add the packed .tcore files to the /plugins folder
-      - name: Move built-in plugins to plugins folder
-        run: npm run plugin:add
+      - name: Install Rust toolchain and components
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
       # Generate the executable
       - name: Generate executable

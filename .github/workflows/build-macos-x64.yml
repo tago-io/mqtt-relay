@@ -79,11 +79,11 @@ jobs:
       - name: Generate tar.gz
         run: |
           cd target/release
-          tar cvf - tago-relay | gzip > ../tago-relay-mac-x64.tar.gz
+          tar cvf - tagoio-relay | gzip > ../../tagoio-relay-mac-x64.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: tago-relay-macos-x64
-          path: target/tago-relay-mac-x64.tar.gz
+          name: tagoio-relay-macos-x64
+          path: ./tagoio-relay-mac-x64.tar.gz
