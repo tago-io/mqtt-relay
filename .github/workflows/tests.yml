@@ -1,9 +1,9 @@
 name: Code Quality
-env: PROD
 on: push
 
 env:
   CARGO_TERM_COLOR: always
+  stage: prod
 
 jobs:
   build:
