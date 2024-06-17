@@ -3,7 +3,7 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: PROD
     env:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
@@ -25,22 +25,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install Rust toolchain and components
+      # Install Rust and Cross
+      - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          override: true
+          components: rustfmt, clippy
 
-      # Generate the executable
-      - name: Generate executable
-        run: ./node_modules/.bin/pkg package.json -t node16-win-x64 --public-packages "*" --no-bytecode --public --compress Brotli
+      - name: Install Cross
+        run: cargo install cross
 
-      # Zip the executable
-      - name: Generate zip
-        run: cd __build__binary__; zip ../tagocore.zip ./tagocore.exe
+      # Build the project using Cross
+      - name: Cross build
+        run: cross build --target x86_64-pc-windows-msvc --release --all-features
+
+      # Zip the binary
+      - name: Generate tar.gz
+        run: |
+          cd target/x86_64-pc-windows-msvc/release
+          tar cvf - tagoio-relay | gzip > ../../tagoio-relay-win-x64.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: mqttrelay-windows-x64
-          path: ../tagocore.zip
+          name: tagoio-relay-win-x64
+          path: ./target/x86_64-pc-windows-msvc/tagoio-relay-win-x64.tar.gz

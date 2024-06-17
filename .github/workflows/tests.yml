@@ -1,5 +1,6 @@
 name: Code Quality
-on: push
+# on: push
+on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
@@ -28,7 +29,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Install Rust toolchain and components
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           components: rustfmt, clippy
@@ -36,12 +37,8 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      # Build the modules
       - name: Cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --verbose
+        run: cargo build --verbose
 
       - name: Test
         run: cargo test --verbose

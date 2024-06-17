@@ -7,7 +7,7 @@ env:
 
 jobs:
   build:
-    runs-on: macos-11
+    runs-on: macOS-latest
     environment: PROD
     env:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
@@ -30,19 +30,14 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Install Rust toolchain and components
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Create empty .env file
         run: touch .env
 
       # Build the modules
-      - name: Release build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all-features --verbose
+      - name: Cargo build
+        run: cargo build --verbose --release --all-features
 
       # Run tests
       - name: Run tests
