@@ -32,24 +32,19 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      # Install vcpkg
-      - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-      - uses: ilammy/setup-nasm@v1
-      # - run: choco install openssl --no-progress
-
-      # Build the modules
-      - name: Build Binary
-        run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
-
-      # Run tests
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "build"
+          target: "${{ env.TARGET }}"
+          toolchain: "stable"
+          args: "--locked --release"
 
       # Zip the binary
       - name: Generate zip
         run: |
           cd target/${{ env.TARGET }}/release
-          Compress-Archive -Path tagoio-relay.exe -DestinationPath ../../${{ env.FILENAME }}.zip
+          7z a ../../${{ env.FILENAME }}.zip tagoio-relay.exe
 
       # Upload the zip file as an artifact
       - name: Upload artifact
