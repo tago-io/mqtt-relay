@@ -24,7 +24,7 @@ jobs:
       - name: Install Rust toolchain and components
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: ${{ env.TARGET }}
+          targets: "${{ env.TARGET }}"
 
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2

@@ -26,7 +26,7 @@ jobs:
       - name: Install Rust toolchain and components
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: ${{ env.TARGET }}
+          targets: "${{ env.TARGET }}"
 
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
@@ -36,7 +36,7 @@ jobs:
 
       # Build the modules
       - name: Build Binary
-        run: cargo build --verbose --locked --release
+        run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
 
       # Run tests
       - name: Run tests
@@ -45,8 +45,8 @@ jobs:
       # Zip the binary
       - name: Generate tar.gz
         run: |
-          cd target/release
-          tar cvf - tagoio-relay | gzip > ../../${{ env.FILENAME }}.tar.gz
+          cd target/${{ env.TARGET }}/release
+          tar cvf - tagoio-relay | gzip > ../../../${{ env.FILENAME }}.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
