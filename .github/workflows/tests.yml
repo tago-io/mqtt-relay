@@ -9,6 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: PROD
+    env:
+      SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,11 +33,8 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Create .env file
-        run: |
-          echo "SERVER_SSL_CA=\"${{ secrets.SERVER_SSL_CA }}\"" >> .env
-          echo "SERVER_SSL_CERT=\"${{ secrets.SERVER_SSL_CERT }}\"" >> .env
-          echo "SERVER_SSL_KEY=\"${{ secrets.SERVER_SSL_KEY }}\"" >> .env
+      - name: Create empty .env file
+        run: touch .env
 
       - name: Build
         run: cargo build --verbose
