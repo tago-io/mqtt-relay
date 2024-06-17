@@ -31,23 +31,8 @@ jobs:
 
       - name: Create empty .env file
         run: touch .env
-
-        # Install NASM
-      - name: Install NASM
-        run: choco install nasm
-
-      - name: Add NASM to PATH
-        run: |
-          $env:PATH += ";C:\Program Files\NASM"
-          echo $env:PATH
-
-      # Verify NASM installation
-      - name: Verify NASM installation
-        run: |
-          nasm -v
-          echo $env:PATH
-
       # Build the modules
+      - uses: ilammy/setup-nasm@v1
       - name: Build Binary
         run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
 
