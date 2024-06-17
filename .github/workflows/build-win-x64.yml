@@ -32,6 +32,7 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
+      - uses: ilammy/setup-nasm@v1
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v0
         with:
