@@ -1,5 +1,5 @@
 name: Code Quality
-
+env: PROD
 on: push
 
 env:
@@ -18,6 +18,12 @@ jobs:
           rustup update --no-self-update stable
           rustup component add --toolchain stable rustfmt 
           rustup default stable
+
+      - name: Set up environment variables
+        run: |
+          echo "SERVER_SSL_CA=${{ secrets.SERVER_SSL_CA }}" >> $GITHUB_ENV
+          echo "SERVER_SSL_CERT=${{ secrets.SERVER_SSL_CERT }}" >> $GITHUB_ENV
+          echo "SERVER_SSL_KEY=${{ secrets.SERVER_SSL_KEY }}" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --verbose
