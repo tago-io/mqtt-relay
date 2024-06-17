@@ -1,44 +1,53 @@
-name: Build for alpine-arm64
+name: Build for linux-arm64
 
 on: workflow_dispatch
+
+env:
+  CARGO_TERM_COLOR: always
+  TARGET: aarch64-unknown-linux-gnu
+  FILENAME: tagoio-relay-linux-arm64
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: PROD
+    env:
+      SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
 
     steps:
       # Checkout the code
-      - name: Checkout the code
-        uses: actions/checkout@v1
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # Setup Docker for cross platform build
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+      - name: Install Rust toolchain and components
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ env.TARGET }}
 
-      # Setup Docker for cross platform build
-      - name: Set up docker buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
 
-        # Build docker image
-      - name: Run build
-        run: docker buildx build --load --platform linux/arm64 -f ./docker/Dockerfile.alpine-arm64 . -t tagocore-container
+      - name: Create empty .env file
+        run: touch .env
 
-      # Pull binary out of docker container
-      - name: Extract tagocore binary out of docker
-        run: docker cp $(docker create tagocore-container):/usr/src/app/__build__binary__/tagocore ./tagocore
+      # Build the modules
+      - name: Build Binary
+        run: cargo build --verbose --locked --release
 
-      # Set binary as executable
-      - name: Chmod
-        run: chmod +x ./tagocore
-
+      # Run tests
+      - name: Run tests
+        run: cargo test --verbose
       # Zip the binary
       - name: Generate tar.gz
-        run: tar cvf - tagocore | gzip > ./tagocore-alpine-arm64.tar.gz
+        run: |
+          cd target/release
+          tar cvf - tagoio-relay | gzip > ../../${{ env.FILENAME }}.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: mqttrelay-alpine-arm64
-          path: ../tagocore.zip
+          name: ${{ env.FILENAME }}
+          path: ./${{ env.FILENAME }}.tar.gz

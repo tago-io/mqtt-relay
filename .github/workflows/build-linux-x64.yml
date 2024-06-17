@@ -1,11 +1,11 @@
-name: Build for linux-x64
+name: Build for alpine-x64
 
 on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
   TARGET: x86_64-unknown-linux-gnu
-  FILENAME: tagoio-relay-linux-x64
+  FILENAME: tagoio-relay-alpine-x64
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
 
       # Upload the zip file as an artifact
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ env.FILENAME }}
           path: ./${{ env.FILENAME }}.tar.gz
