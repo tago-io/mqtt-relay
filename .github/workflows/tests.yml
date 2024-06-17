@@ -8,6 +8,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: PROD
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -1,10 +1,10 @@
 name: Build for win-x64
-
 on: workflow_dispatch
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: PROD
 
     steps:
       # Checkout the code

@@ -1,4 +1,4 @@
-name: Deplot to DockerHub
+name: Deploy to DockerHub
 
 on:
   workflow_dispatch:
