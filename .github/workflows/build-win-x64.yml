@@ -31,6 +31,21 @@ jobs:
 
       - name: Create empty .env file
         run: touch .env
+
+      # Install vcpkg
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+
+      # Install OpenSSL using vcpkg
+      - name: Install OpenSSL
+        run: .\vcpkg\vcpkg.exe install openssl:x64-windows
+
+      # Set VCPKG_ROOT environment variable
+      - name: Set VCPKG_ROOT
+        run: echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
+
       # Build the modules
       - uses: ilammy/setup-nasm@v1
       - name: Build Binary
