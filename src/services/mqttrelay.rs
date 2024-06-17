@@ -10,7 +10,9 @@ use tokio::{
   time::{sleep, Duration},
 };
 const BACKOFF_MAX_RETRIES: u32 = 20;
+
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct PublishMessage {
   pub topic: String,
   pub message: String,

@@ -81,6 +81,7 @@ impl Mqtt {
 }
 
 #[derive(serde::Deserialize)]
+#[allow(dead_code)]
 pub struct PublishRequest {
   pub topic: String,
   pub message: String,
