@@ -1,0 +1,55 @@
+name: Code Quality
+on: push
+
+env:
+  CARGO_TERM_COLOR: always
+  stage: prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: PROD
+    env:
+      SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Rust toolchain and components
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Create empty .env file
+        run: touch .env
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Test
+        run: cargo test --verbose
+
+      - name: Lint
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+      - name: Format Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check

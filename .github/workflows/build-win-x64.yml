@@ -1,0 +1,47 @@
+name: Build for win-x64
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: PROD
+
+    steps:
+      # Checkout the code
+      - name: Checkout the code
+        uses: actions/checkout@v1
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Build the modules
+      - name: Run build
+        run: npm run build
+
+      # Manually copy the bin file of sdk to the .bin folder to use the local copy of the sdk
+      - name: Override tcore-plugin .bin file
+        run: cd ./node_modules/.bin; ln -s ../../packages/tcore-sdk/build/Bin/Bin.js tcore-plugin; chmod +x tcore-plugin; cd ../../
+
+      # Pack Plugin Store, TagoIO Integration, and Local Filesystem into a .tcore file
+      - name: Pack built-in plugins
+        run: npm run pack
+
+      # Add the packed .tcore files to the /plugins folder
+      - name: Move built-in plugins to plugins folder
+        run: npm run plugin:add
+
+      # Generate the executable
+      - name: Generate executable
+        run: ./node_modules/.bin/pkg package.json -t node16-win-x64 --public-packages "*" --no-bytecode --public --compress Brotli
+
+      # Zip the executable
+      - name: Generate zip
+        run: cd __build__binary__; zip ../tagocore.zip ./tagocore.exe
+
+      # Upload the zip file as an artifact
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: mqttrelay-windows-x64
+          path: ../tagocore.zip
