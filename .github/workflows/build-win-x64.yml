@@ -36,6 +36,12 @@ jobs:
       - name: Install NASM
         run: choco install nasm
 
+      # Verify NASM installation
+      - name: Verify NASM installation
+        run: |
+          nasm -v
+          echo $env:PATH
+
       # Build the modules
       - name: Build Binary
         run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
