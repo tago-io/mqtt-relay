@@ -19,6 +19,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Install Rust toolchain and components
         uses: actions-rs/toolchain@v1
         with:
@@ -28,8 +38,11 @@ jobs:
         run: touch .env
 
       # Build the modules
-      - name: Build
-        run: cargo build --verbose --release
+      - name: Release build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features --verbose
 
       # Run tests
       - name: Run tests

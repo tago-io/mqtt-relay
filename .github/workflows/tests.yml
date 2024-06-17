@@ -36,8 +36,12 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      - name: Build
-        run: cargo build --verbose
+      # Build the modules
+      - name: Release build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
 
       - name: Test
         run: cargo test --verbose
