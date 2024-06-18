@@ -22,6 +22,8 @@ RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
 ADD . ${TAGOIO_SOURCE_FOLDER}
 
+RUN touch .env
+
 RUN cargo build --release
 
 FROM debian:bookworm-slim
