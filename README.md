@@ -73,23 +73,8 @@ Before you begin, ensure you have:
    ```sh
    ./tagoio-relay init
    ```
-2. **Edit Config File**: Modify the generated `config.toml`:
-   ```toml
-   [relay]
-   network_token="Your-Network-Token"
-   authorization_token="Your-Authorization-Token"
-   tagoio_url="https://api.tago.io"
-   downlink_port="3001"
+2. **Edit Config File**: Modify the generated `config.toml` as described in the [Configuration File](#configuration-file-and-environment-variables).
 
-   [relay.mqtt]
-   client_id="tagoio-relay"
-   tls_enabled=false
-   address="localhost"
-   port=1883
-   subscribe=["/tago/#", "/topic/+"]
-   username="my-username"
-   password="my-password"
-   ```
 3. **Start the Relay**:
    ```sh
    ./tagoio-relay start
@@ -101,14 +86,13 @@ Before you begin, ensure you have:
 To run the TagoIO MQTT Relay using Docker, use the following command:
 
 ```sh
-docker run -p 3001:3001 -it --rm --name my-test tagoio/tagorelay start --no-daemon
+docker run -p 3001:3001 -it --rm --name my-test tagoio/relay start --no-daemon
 ```
 
 ### Image Variants
 
-- **tagoio/tagocore:<version>**: Main image for general use.
-- **tagoio/tagocore:alpine**: Based on Alpine Linux, ideal for smaller image sizes.
-- **tagoio/tagocore:bullseye**: Based on Debian 11.
+- **tagoio/relay:<version>**: Main image for general use.
+- **tagoio/relay:bullseye**: Based on Debian 11.
 
 ## CLI Commands
 
@@ -130,7 +114,40 @@ Starts the MQTT Relay service.
 tagoio-relay start [--verbose info,mqtt] [--config-path /path/to/config.toml]
 ```
 
-## Configuration File
+## Configuration File and Environment Variables
+
+TAGOIO__RELAY__NETWORK_TOKEN
+TAGOIO__RELAY__AUTHORIZATION_TOKEN
+TAGOIO__RELAY__TAGOIO_URL
+TAGOIO__RELAY__DOWNLINK_PORT
+TAGOIO__RELAY__MQTT__CLIENT_ID
+TAGOIO__RELAY__MQTT__TLS_ENABLED
+TAGOIO__RELAY__MQTT__ADDRESS
+TAGOIO__RELAY__MQTT__PORT
+TAGOIO__RELAY__MQTT__SUBSCRIBE
+TAGOIO__RELAY__MQTT__USERNAME
+TAGOIO__RELAY__MQTT__PASSWORD
+TAGOIO__RELAY__MQTT__BROKER_TLS_CA
+TAGOIO__RELAY__MQTT__BROKER_TLS_CERT
+TAGOIO__RELAY__MQTT__BROKER_TLS_KEY
+
+Sheel example
+```sh
+export TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
+export TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
+export TAGOIO__RELAY__TAGOIO_URL="https://api.tago.io"
+export TAGOIO__RELAY__DOWNLINK_PORT="3001"
+export TAGOIO__RELAY__MQTT__CLIENT_ID="tagoio-relay"
+export TAGOIO__RELAY__MQTT__TLS_ENABLED="false"
+export TAGOIO__RELAY__MQTT__ADDRESS="localhost"
+export TAGOIO__RELAY__MQTT__PORT="1883"
+export TAGOIO__RELAY__MQTT__SUBSCRIBE="/tago/# /topic/+"
+export TAGOIO__RELAY__MQTT__USERNAME="my-username"
+export TAGOIO__RELAY__MQTT__PASSWORD="my-password"
+export TAGOIO__RELAY__MQTT__BROKER_TLS_CA=""
+export TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
+export TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
+```
 
 The `config.toml` file contains the Relay parameters. Here is a reference:
 

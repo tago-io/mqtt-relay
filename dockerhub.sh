@@ -4,8 +4,24 @@ FULL_VERSION=$1
 
 SPLIT=(${FULL_VERSION//./ })
 MAJOR=${SPLIT[0]}
-MINOR=${SPLIT[1]}
-PATCH=${SPLIT[2]}
+MINOR=${SPLIT[1]:-0} # set to 0 if no minor version is provided
+PATCH=${SPLIT[2]:-0} # set to 0 if no patch version is provided
+
+# Validate MAJOR, MINOR, and PATCH to ensure they are numeric
+if ! [[ "$MAJOR" =~ ^[0-9]+$ ]]; then
+  echo "Error: MAJOR version is not a number."
+  exit 1
+fi
+
+if ! [[ "$MINOR" =~ ^[0-9]+$ ]]; then
+  echo "Error: MINOR version is not a number."
+  exit 1
+fi
+
+if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
+  echo "Error: PATCH version is not a number."
+  exit 1
+fi
 
 # Alpine
 # docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \

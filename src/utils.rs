@@ -60,7 +60,11 @@ pub fn fetch_config_file(user_path: Option<String>) -> Option<ConfigFile> {
   }
 
   let config: Option<ConfigFileResponse> = initialize(Args {
-    auto_map_env: Some(AutoMapEnvArgs::default()),
+    auto_map_env: Some(AutoMapEnvArgs {
+      divider: "__",
+      prefix: Some("TAGOIO"), // Prefix for environment variables
+      transform: Box::new(|name| name.to_lowercase()),
+    }),
     // logging: Logging::StdOut,
     config_path: Some(&config_path),
     ..Args::default()
