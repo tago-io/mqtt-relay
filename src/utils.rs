@@ -46,6 +46,12 @@ pub fn init_config(user_path: Option<impl AsRef<str>>) {
     std::process::exit(1);
   }
 
+  let config_dir = config_path.parent().expect("Failed to get config directory");
+  if !config_dir.exists() {
+    log::info!(target: "info", "Creating config directory at {}", config_dir.display());
+    std::fs::create_dir_all(config_dir).expect("Failed to create config directory");
+  }
+
   std::fs::write(&config_path, DEFAULT_CONFIG).expect("Failed to create default config file");
 
   log::info!("Configuration file created at {}", config_path.display());

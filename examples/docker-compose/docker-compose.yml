@@ -1,6 +1,6 @@
 services:
   my-eclipse:
-    image: tagoio/tago-relay:latest
+    image: tagoio/relay:latest
     restart: always
     ports:
       - "3001:3001"
