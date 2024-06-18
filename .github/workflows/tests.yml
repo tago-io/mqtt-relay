@@ -11,9 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: PROD
     env:
-      SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
-      SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
-      SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
+      CARGO_SERVER_SSL_CA: "Code-Quality-Test-CA"
+      CARGO_SERVER_SSL_CERT: "Code-Quality-Test-Cert"
+      CARGO_SERVER_SSL_KEY: "Code-Quality-Test-Key"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
