@@ -34,5 +34,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Convert environment variables to Base64
+        id: convert_env
+        run: |
+          echo "CARGO_SERVER_SSL_CA_BASE64=$(echo -n $CARGO_SERVER_SSL_CA | base64)" >> $GITHUB_ENV
+          echo "CARGO_SERVER_SSL_CERT_BASE64=$(echo -n $CARGO_SERVER_SSL_CERT | base64)" >> $GITHUB_ENV
+          echo "CARGO_SERVER_SSL_KEY_BASE64=$(echo -n $CARGO_SERVER_SSL_KEY | base64)" >> $GITHUB_ENV
+
       - name: Build and deploy images
+        env:
+          CARGO_SERVER_SSL_CA_BASE64: ${{ env.CARGO_SERVER_SSL_CA_BASE64 }}
+          CARGO_SERVER_SSL_CERT_BASE64: ${{ env.CARGO_SERVER_SSL_CERT_BASE64 }}
+          CARGO_SERVER_SSL_KEY_BASE64: ${{ env.CARGO_SERVER_SSL_KEY_BASE64 }}
         run: bash dockerhub.sh ${{ github.event.inputs.version }}
