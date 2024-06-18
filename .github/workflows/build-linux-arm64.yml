@@ -15,6 +15,8 @@ jobs:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
       SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
       SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+      CC: aarch64-linux-gnu-gcc
 
     steps:
       # Checkout the code
