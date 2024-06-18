@@ -37,9 +37,9 @@ jobs:
       - name: Convert environment variables to Base64
         id: convert_env
         run: |
-          echo "CARGO_SERVER_SSL_CA_BASE64=$(echo -n $CARGO_SERVER_SSL_CA | base64)" >> $GITHUB_ENV
-          echo "CARGO_SERVER_SSL_CERT_BASE64=$(echo -n $CARGO_SERVER_SSL_CERT | base64)" >> $GITHUB_ENV
-          echo "CARGO_SERVER_SSL_KEY_BASE64=$(echo -n $CARGO_SERVER_SSL_KEY | base64)" >> $GITHUB_ENV
+          echo "::set-env name=CARGO_SERVER_SSL_CA_BASE64::$(echo -n $CARGO_SERVER_SSL_CA | base64)"
+          echo "::set-env name=CARGO_SERVER_SSL_CERT_BASE64::$(echo -n $CARGO_SERVER_SSL_CERT | base64)"
+          echo "::set-env name=CARGO_SERVER_SSL_KEY_BASE64::$(echo -n $CARGO_SERVER_SSL_KEY | base64)"
 
       - name: Build and deploy images
         env:
