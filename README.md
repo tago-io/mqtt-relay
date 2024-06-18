@@ -1,6 +1,11 @@
-# TagoIO MQTT Relay
+<br/>
+<p align="center">
+  <img src="https://assets.tago.io/tagoio/tagoio.png" width="250px" alt="TagoIO"></img>
+</p>
 
-Welcome to the TagoIO MQTT Relay! This software bridges your MQTT Broker and the TagoIO platform, allowing seamless integration and data flow. It's a fast, open-source, and scalable solution written in Rust.
+# TagoIO | MQTT Relay
+
+This software bridges your MQTT Broker and the TagoIO platform, allowing seamless integration and data flow. It's a fast, open-source, and scalable solution written in Rust.
 
 ## Table of Contents
 
