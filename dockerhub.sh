@@ -44,17 +44,17 @@ CARGO_SERVER_SSL_CERT_BASE64=$(echo -n "${CARGO_SERVER_SSL_CERT}" | base64)
 CARGO_SERVER_SSL_KEY_BASE64=$(echo -n "${CARGO_SERVER_SSL_KEY}" | base64)
 
 # Validate if CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY are in base64 format
-if ! [[ "$CARGO_SERVER_SSL_CA" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+if ! [[ "$CARGO_SERVER_SSL_CA_BASE64" =~ ^[A-Za-z0-9+/=]+$ ]]; then
   echo "Error: CARGO_SERVER_SSL_CA is not in base64 format."
   exit 1
 fi
 
-if ! [[ "$CARGO_SERVER_SSL_CERT" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+if ! [[ "$CARGO_SERVER_SSL_CERT_BASE64" =~ ^[A-Za-z0-9+/=]+$ ]]; then
   echo "Error: CARGO_SERVER_SSL_CERT is not in base64 format."
   exit 1
 fi
 
-if ! [[ "$CARGO_SERVER_SSL_KEY" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+if ! [[ "$CARGO_SERVER_SSL_KEY_BASE64" =~ ^[A-Za-z0-9+/=]+$ ]]; then
   echo "Error: CARGO_SERVER_SSL_KEY is not in base64 format."
   exit 1
 fi
@@ -68,9 +68,9 @@ fi
 
 # Debian
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
-  --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA} \
-  --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT} \
-  --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY} \
+  --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
+  --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT_BASE64} \
+  --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY_BASE64} \
   --platform linux/arm/v7,linux/arm64/v8,linux/amd64 \
   --tag tagoio/tagorelay \
   --tag tagoio/tagorelay:debian \
