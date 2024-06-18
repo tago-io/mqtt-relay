@@ -47,19 +47,20 @@ jobs:
           tar cvf - tagoio-relay | gzip > ../../../${{ env.FILENAME }}.tar.gz
 
       # Upload the zip file as an artifact
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.FILENAME }}
-          path: ./${{ env.FILENAME }}.tar.gz
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ env.FILENAME }}
+      #     path: ./${{ env.FILENAME }}.tar.gz
+
+      - name: Generate SHA-256 checksum
+        run: |
+          shasum -a 256 ${{ env.FILENAME }}.tar.gz > ${{ env.FILENAME }}.tar.gz.sha256
 
       # Upload the artifact to the release
       - name: Upload to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.FILENAME }}.tar.gz
-          asset_name: ${{ env.FILENAME }}.tar.gz
-          asset_content_type: application/gzip
+          files: |
+            ./${{ env.FILENAME }}.tar.gz
+            ./${{ env.FILENAME }}.tar.gz.sha256

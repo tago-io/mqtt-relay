@@ -40,6 +40,7 @@ jobs:
           target: "${{ env.TARGET }}"
           toolchain: "stable"
           args: "--locked --release"
+          strip: true
 
       # Zip the binary
       - name: Generate zip
@@ -48,17 +49,15 @@ jobs:
           7z a ../../../${{ env.FILENAME }}.zip tagoio-relay.exe
 
       # Upload the zip file as an artifact
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.FILENAME }}
-          path: ./${{ env.FILENAME }}.zip
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ env.FILENAME }}
+      #     path: ./${{ env.FILENAME }}.zip
 
       # Upload the artifact to the release
       - name: Upload to Release
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.FILENAME }}.zip
-          asset_name: ${{ env.FILENAME }}.zip
-          asset_content_type: application/zip
+          files: |
+            ./${{ env.FILENAME }}.zip
