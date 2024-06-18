@@ -10,6 +10,11 @@ RUN export CARGO_SERVER_SSL_CA=$(echo "${CARGO_SERVER_SSL_CA}" | base64 -d)
 RUN export CARGO_SERVER_SSL_CERT=$(echo "${CARGO_SERVER_SSL_CERT}" | base64 -d)
 RUN export CARGO_SERVER_SSL_KEY=$(echo "${CARGO_SERVER_SSL_KEY}" | base64 -d)
 
+# Validate that the SSL environment variables are set
+RUN /bin/bash -c 'if [ -z "$CARGO_SERVER_SSL_CA" ]; then echo "Error: CARGO_SERVER_SSL_CA is not set"; exit 1; fi && \
+    if [ -z "$CARGO_SERVER_SSL_CERT" ]; then echo "Error: CARGO_SERVER_SSL_CERT is not set"; exit 1; fi && \
+    if [ -z "$CARGO_SERVER_SSL_KEY" ]; then echo "Error: CARGO_SERVER_SSL_KEY is not set"; exit 1; fi'
+
 RUN apt update
 RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential
 

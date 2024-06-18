@@ -35,23 +35,6 @@ CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64)
 echo "CARGO_SERVER_SSL_CA_BASE64: $CARGO_SERVER_SSL_CA_BASE64"
 echo "CARGO_SERVER_SSL_CERT_BASE64: $CARGO_SERVER_SSL_CERT_BASE64"
 echo "CARGO_SERVER_SSL_KEY_BASE64: $CARGO_SERVER_SSL_KEY_BASE64"
-
-# Validate if CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY are in base64 format
-if ! [[ "$CARGO_SERVER_SSL_CA_BASE64" =~ ^[A-Za-z0-9+/=]+$ ]]; then
-  echo "Error: CARGO_SERVER_SSL_CA is not in base64 format."
-  exit 1
-fi
-
-if ! [[ "$CARGO_SERVER_SSL_CERT_BASE64" =~ ^[A-Za-z0-9+/=]+$ ]]; then
-  echo "Error: CARGO_SERVER_SSL_CERT is not in base64 format."
-  exit 1
-fi
-
-if ! [[ "$CARGO_SERVER_SSL_KEY_BASE64" =~ ^[A-Za-z0-9+/=]+$ ]]; then
-  echo "Error: CARGO_SERVER_SSL_KEY is not in base64 format."
-  exit 1
-fi
-
 # Alpine
 # docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
 #   --platform linux/arm64/v8,linux/amd64 \
