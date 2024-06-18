@@ -54,7 +54,7 @@ jobs:
       # Upload the zip file as an artifact
       - name: Upload artifact
         if: github.event_name != 'release'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FILENAME }}
           path: ./${{ env.FILENAME }}.zip
