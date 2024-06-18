@@ -30,6 +30,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Print SSL Certificates
+        run: |
+          echo "CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}"
+
       - name: Build and deploy images
         env:
           CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
