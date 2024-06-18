@@ -81,7 +81,7 @@ Before you begin, ensure you have:
    ```sh
    ./tagoio-relay init
    ```
-2. **Edit Config File**: Modify the generated `config.toml` as described in the [Configuration File and Environment Variables](#configuration-file-and-environment-variables).
+2. **Edit Config File**: Modify the generated `.tagoio-mqtt-relay.toml` as described in the [Configuration File and Environment Variables](#configuration-file-and-environment-variables).
 
 3. **Start the Relay**:
    ```sh
@@ -110,7 +110,7 @@ The CLI has two main commands: `init` and `start`.
 
 ### `init`
 
-Generates the `config.toml` file required for setting up the Relay.
+Generates the `.tagoio-mqtt-relay.toml` file required for setting up the Relay.
 
 ```sh
 tagoio-relay init [--config-path /path/to/config]
@@ -121,7 +121,7 @@ tagoio-relay init [--config-path /path/to/config]
 Starts the MQTT Relay service.
 
 ```sh
-tagoio-relay start [--verbose info,mqtt] [--config-path /path/to/config.toml]
+tagoio-relay start [--verbose info,error,mqtt,network] [--config-path /path/to/config.toml]
 ```
 
 ## Configuration File and Environment Variables
@@ -145,11 +145,12 @@ export TAGOIO__RELAY__MQTT__PASSWORD="my-password"
 export TAGOIO__RELAY__MQTT__BROKER_TLS_CA=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
+export TAGOIO__RELAY__CONFIG_PATH="./.config/.tagoio-mqtt-relay.toml"
 ```
 
-### `config.toml`
+### `.tagoio-mqtt-relay.toml`
 
-The `config.toml` file contains the Relay parameters. Here is a reference:
+The `.tagoio-mqtt-relay.toml` file contains the Relay parameters. Here is a reference:
 
 ```toml
 [relay]

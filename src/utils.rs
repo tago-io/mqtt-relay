@@ -16,7 +16,7 @@ const DEFAULT_CONFIG: &str = include_str!("./default_config.toml");
  */
 fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
   let env_config_path = if user_path.is_none() {
-    std::env::var("CONFIG_PATH").ok()
+    std::env::var("TAGOIO__RELAY__CONFIG_PATH").ok()
   } else {
     user_path
   };
@@ -25,7 +25,10 @@ fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
     .as_deref()
     .map(std::path::PathBuf::from)
     .unwrap_or_else(|| {
-      let home_dir = home_dir().expect("Failed to get home directory");
+      let home_dir = home_dir().unwrap_or_else(|| {
+        log::warn!(target: "info", "Home directory is not set. Using current directory as fallback.");
+        std::path::PathBuf::from(".")
+      });
       let config_path_str = format!("{}/.config/.tagoio-mqtt-relay.toml", home_dir.display());
       std::path::PathBuf::from(config_path_str)
     });
