@@ -1,5 +1,14 @@
 FROM rust:slim-bookworm as build
 ARG TAGOIO_SOURCE_FOLDER="/tago-io"
+ARG TAGORELAY_VERSION
+ARG CARGO_SERVER_SSL_CA
+ARG CARGO_SERVER_SSL_CERT
+ARG CARGO_SERVER_SSL_KEY
+
+# Decode the base64 encoded environment variables
+RUN export CARGO_SERVER_SSL_CA=$(echo "${CARGO_SERVER_SSL_CA}" | base64 -d)
+RUN export CARGO_SERVER_SSL_CERT=$(echo "${CARGO_SERVER_SSL_CERT}" | base64 -d)
+RUN export CARGO_SERVER_SSL_KEY=$(echo "${CARGO_SERVER_SSL_KEY}" | base64 -d)
 
 RUN apt update
 RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential

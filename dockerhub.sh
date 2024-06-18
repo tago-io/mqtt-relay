@@ -23,6 +23,42 @@ if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
+# Validate if CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY environment variables exist
+if [ -z "$CARGO_SERVER_SSL_CA" ]; then
+  echo "Error: CARGO_SERVER_SSL_CA environment variable is not set."
+  exit 1
+fi
+
+if [ -z "$CARGO_SERVER_SSL_CERT" ]; then
+  echo "Error: CARGO_SERVER_SSL_CERT environment variable is not set."
+  exit 1
+fi
+
+if [ -z "$CARGO_SERVER_SSL_KEY" ]; then
+  echo "Error: CARGO_SERVER_SSL_KEY environment variable is not set."
+  exit 1
+fi
+
+CARGO_SERVER_SSL_CA_BASE64=$(echo -n "${CARGO_SERVER_SSL_CA}" | base64)
+CARGO_SERVER_SSL_CERT_BASE64=$(echo -n "${CARGO_SERVER_SSL_CERT}" | base64)
+CARGO_SERVER_SSL_KEY_BASE64=$(echo -n "${CARGO_SERVER_SSL_KEY}" | base64)
+
+# Validate if CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY are in base64 format
+if ! [[ "$CARGO_SERVER_SSL_CA" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+  echo "Error: CARGO_SERVER_SSL_CA is not in base64 format."
+  exit 1
+fi
+
+if ! [[ "$CARGO_SERVER_SSL_CERT" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+  echo "Error: CARGO_SERVER_SSL_CERT is not in base64 format."
+  exit 1
+fi
+
+if ! [[ "$CARGO_SERVER_SSL_KEY" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+  echo "Error: CARGO_SERVER_SSL_KEY is not in base64 format."
+  exit 1
+fi
+
 # Alpine
 # docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
 #   --platform linux/arm64/v8,linux/amd64 \
@@ -32,6 +68,9 @@ fi
 
 # Debian
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
+  --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA} \
+  --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT} \
+  --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY} \
   --platform linux/arm/v7,linux/arm64/v8,linux/amd64 \
   --tag tagoio/tagorelay \
   --tag tagoio/tagorelay:debian \
