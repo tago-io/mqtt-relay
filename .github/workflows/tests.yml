@@ -21,39 +21,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
       - name: Install Rust toolchain and components
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           components: rustfmt, clippy
 
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Create empty .env file
         run: touch .env
 
-      - name: Cargo build
-        run: cargo build --verbose
-
-      - name: Test
-        run: cargo test --verbose
-
-      - name: Lint
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
-
-      - name: Format Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -- --check
+      - name: Build and Test
+        run: |
+          cargo build --verbose
+          cargo test --verbose
+          cargo clippy -- -D warnings
+          cargo fmt -- --check
