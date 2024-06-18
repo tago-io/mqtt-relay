@@ -42,9 +42,9 @@ const HOST_ADDRESS: &str = "::"; // ? External IPv4/IPv6 support
 
 fn create_ssl_acceptor() -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack> {
   // Certificates contents are stored in the environment variables
-  let cert = dotenv!("SERVER_SSL_CERT").as_bytes();
-  let key = dotenv!("SERVER_SSL_KEY").as_bytes();
-  let ca = dotenv!("SERVER_SSL_CA").as_bytes();
+  let cert = dotenv!("CARGO_SERVER_SSL_CERT").as_bytes();
+  let key = dotenv!("CARGO_SERVER_SSL_KEY").as_bytes();
+  let ca = dotenv!("CARGO_SERVER_SSL_CA").as_bytes();
 
   let cert = X509::from_pem(cert)?;
   let key = PKey::private_key_from_pem(key)?;
