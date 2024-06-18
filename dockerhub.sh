@@ -28,13 +28,16 @@ if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
+# Ensure CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY are set
+if [ -z "$CARGO_SERVER_SSL_CA" ] || [ -z "$CARGO_SERVER_SSL_CERT" ] || [ -z "$CARGO_SERVER_SSL_KEY" ]; then
+  echo "Error: SSL environment variables are not set."
+  exit 1
+fi
+
 CARGO_SERVER_SSL_CA_BASE64=$(echo "$CARGO_SERVER_SSL_CA" | base64)
 CARGO_SERVER_SSL_CERT_BASE64=$(echo "$CARGO_SERVER_SSL_CERT" | base64)
 CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64)
 
-echo "CARGO_SERVER_SSL_CA_BASE64: $CARGO_SERVER_SSL_CA_BASE64"
-echo "CARGO_SERVER_SSL_CERT_BASE64: $CARGO_SERVER_SSL_CERT_BASE64"
-echo "CARGO_SERVER_SSL_KEY_BASE64: $CARGO_SERVER_SSL_KEY_BASE64"
 # Alpine
 # docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
 #   --platform linux/arm64/v8,linux/amd64 \
@@ -54,4 +57,5 @@ docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   --tag tagoio/tagorelay:${MAJOR}.${MINOR}-bullseye \
   --tag tagoio/tagorelay:${MAJOR}.${MINOR}.${PATCH}-bullseye \
   --tag tagoio/tagorelay:${MAJOR}.${MINOR} \
-  --tag tagoio/tagorelay:${MAJOR}.${MINOR}.${PATCH} .
+  --tag tagoio/tagorelay:${MAJOR}.${MINOR}.${PATCH} \
+  .
