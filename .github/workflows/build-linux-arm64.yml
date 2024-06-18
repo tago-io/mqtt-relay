@@ -1,6 +1,9 @@
 name: Build for linux-arm64
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,8 +18,6 @@ jobs:
       SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
       SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
       SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
-      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
-      CC: aarch64-linux-gnu-gcc
 
     steps:
       # Checkout the code
@@ -25,14 +26,9 @@ jobs:
 
       - name: Install Rust toolchain and components
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: "${{ env.TARGET }}"
 
-      - name: Install musl-tools on Linux
-        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
-
-      - name: Install aarch64-linux-musl-gcc
-        run: sudo apt-get install --yes gcc-aarch64-linux-gnu
+      - name: Install cross
+        run: cargo install cross
 
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
@@ -42,11 +38,11 @@ jobs:
 
       # Build the modules
       - name: Build Binary
-        run: cargo build --verbose --locked --release --target ${{ env.TARGET }}
+        run: cross build --verbose --locked --release --target ${{ env.TARGET }}
 
       # Run tests
       - name: Run tests
-        run: cargo test --verbose
+        run: cross test --verbose --target ${{ env.TARGET }}
 
       # Zip the binary
       - name: Generate tar.gz
@@ -56,17 +52,20 @@ jobs:
 
       # Upload the zip file as an artifact
       - name: Upload artifact
+        if: github.event_name != 'release'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.FILENAME }}
           path: ./${{ env.FILENAME }}.tar.gz
 
       - name: Generate SHA-256 checksum
+        if: github.event_name == 'release'
         run: |
           shasum -a 256 ${{ env.FILENAME }}.tar.gz > ${{ env.FILENAME }}.tar.gz.sha256
 
       # Upload the artifact to the release
       - name: Upload to Release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |

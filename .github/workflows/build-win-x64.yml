@@ -1,6 +1,9 @@
 name: Build for win-x64
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 env:
   CARGO_TERM_COLOR: always
@@ -49,14 +52,16 @@ jobs:
           7z a ../../../${{ env.FILENAME }}.zip tagoio-relay.exe
 
       # Upload the zip file as an artifact
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: ${{ env.FILENAME }}
-      #     path: ./${{ env.FILENAME }}.zip
+      - name: Upload artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.FILENAME }}
+          path: ./${{ env.FILENAME }}.zip
 
       # Upload the artifact to the release
       - name: Upload to Release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |

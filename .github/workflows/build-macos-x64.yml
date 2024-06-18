@@ -1,6 +1,7 @@
 name: Build for mac-arm64
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -75,19 +76,22 @@ jobs:
           cd target/${{ env.TARGET }}/release
           tar cvf - tagoio-relay | gzip > ../../../${{ env.FILENAME }}.tar.gz
 
-      # # Upload the zip file as an artifact
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: ${{ env.FILENAME }}
-      #     path: ./${{ env.FILENAME }}.tar.gz
+      # Upload the zip file as an artifact
+      - name: Upload artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.FILENAME }}
+          path: ./${{ env.FILENAME }}.tar.gz
 
       - name: Generate SHA-256 checksum
+        if: github.event_name == 'release'
         run: |
           shasum -a 256 ${{ env.FILENAME }}.tar.gz > ${{ env.FILENAME }}.tar.gz.sha256
 
       # Upload the artifact to the release
       - name: Upload to Release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
