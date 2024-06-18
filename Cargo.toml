@@ -12,7 +12,6 @@ axum = "0.7.5"
 axum-server = { version = "0.6.0", features = ["tls-rustls", "tls-openssl"] }
 clap = { version = "4.5.4", features = ["derive"] }
 config = "0.14.0"
-dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
 env_logger = "0.11.3"
 home = "0.5.9"

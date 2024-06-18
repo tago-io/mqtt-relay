@@ -16,7 +16,7 @@ RUN /bin/bash -c 'if [ -z "$CARGO_SERVER_SSL_CA" ]; then echo "Error: CARGO_SERV
     if [ -z "$CARGO_SERVER_SSL_KEY" ]; then echo "Error: CARGO_SERVER_SSL_KEY is not set"; exit 1; fi'
 
 RUN apt update
-RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential
+RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential cmake
 
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
@@ -26,11 +26,14 @@ RUN touch .env
 
 RUN cargo build --release
 
+# Unset the SSL environment variables
+RUN unset CARGO_SERVER_SSL_CA CARGO_SERVER_SSL_CERT CARGO_SERVER_SSL_KEY
+
 FROM debian:bookworm-slim
 ARG TAGOIO_SOURCE_FOLDER="/tago-io"
 
 RUN apt update
-RUN apt install -y build-essential netcat-traditional ca-certificates
+RUN apt install -y openssl build-essential netcat-traditional ca-certificates
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
