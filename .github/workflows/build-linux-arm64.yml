@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
-  TARGET: aarch64-unknown-linux-gnu
+  TARGET: aarch64-unknown-linux-musl
   FILENAME: tagoio-relay-linux-arm64
 
 jobs:
@@ -29,10 +29,12 @@ jobs:
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Install musl-tools on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
+
       - name: Create empty .env file
         run: touch .env
 
-      - uses: ilammy/setup-nasm@v1
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v0
         with:
@@ -55,12 +57,12 @@ jobs:
           path: ./${{ env.FILENAME }}.tar.gz
 
       # Upload the artifact to the release
-      - name: Upload to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.FILENAME }}.tar.gz
-          asset_name: ${{ env.FILENAME }}.tar.gz
-          asset_content_type: application/gzip
+      # - name: Upload to Release
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ github.event.release.upload_url }}
+      #     asset_path: ./${{ env.FILENAME }}.tar.gz
+      #     asset_name: ${{ env.FILENAME }}.tar.gz
+      #     asset_content_type: application/gzip
