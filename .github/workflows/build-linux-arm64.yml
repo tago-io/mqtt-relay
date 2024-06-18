@@ -21,11 +21,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain and components
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: "${{ env.TARGET }}"
-
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
 
@@ -42,12 +37,14 @@ jobs:
           target: "${{ env.TARGET }}"
           toolchain: "stable"
           args: "--locked --release"
+          strip: true
 
       # Zip the binary
       - name: Generate tar.gz
+        shell: bash
         run: |
           cd target/${{ env.TARGET }}/release
-          tar cvf - tagoio-relay | gzip > ../../../${{ env.FILENAME }}.tar.gz
+          tar czvf - tagoio-relay | gzip > ../../../${{ env.FILENAME }}.tar.gz
 
       # Upload the zip file as an artifact
       - name: Upload artifact
