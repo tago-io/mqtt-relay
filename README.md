@@ -12,8 +12,11 @@ Welcome to the TagoIO MQTT Relay! This software bridges your MQTT Broker and the
   - [Configuration](#configuration)
   - [Running the Relay](#running-the-relay)
 - [Docker Setup](#docker-setup)
+  - [Image Variants](#image-variants)
 - [CLI Commands](#cli-commands)
-- [Configuration File](#configuration-file)
+  - [`init`](#init)
+  - [`start`](#start)
+- [Configuration File and Environment Variables](#configuration-file-and-environment-variables)
 - [License](#license)
 
 ## Introduction
@@ -73,7 +76,7 @@ Before you begin, ensure you have:
    ```sh
    ./tagoio-relay init
    ```
-2. **Edit Config File**: Modify the generated `config.toml` as described in the [Configuration File](#configuration-file-and-environment-variables).
+2. **Edit Config File**: Modify the generated `config.toml` as described in the [Configuration File and Environment Variables](#configuration-file-and-environment-variables).
 
 3. **Start the Relay**:
    ```sh
@@ -88,6 +91,8 @@ To run the TagoIO MQTT Relay using Docker, use the following command:
 ```sh
 docker run -p 3001:3001 -it --rm --name my-test tagoio/relay start --no-daemon
 ```
+
+Specific docker documentation can be found on the [Docker Hub page](https://hub.docker.com/r/tagoio/relay).
 
 ### Image Variants
 
@@ -116,22 +121,10 @@ tagoio-relay start [--verbose info,mqtt] [--config-path /path/to/config.toml]
 
 ## Configuration File and Environment Variables
 
-TAGOIO__RELAY__NETWORK_TOKEN
-TAGOIO__RELAY__AUTHORIZATION_TOKEN
-TAGOIO__RELAY__TAGOIO_URL
-TAGOIO__RELAY__DOWNLINK_PORT
-TAGOIO__RELAY__MQTT__CLIENT_ID
-TAGOIO__RELAY__MQTT__TLS_ENABLED
-TAGOIO__RELAY__MQTT__ADDRESS
-TAGOIO__RELAY__MQTT__PORT
-TAGOIO__RELAY__MQTT__SUBSCRIBE
-TAGOIO__RELAY__MQTT__USERNAME
-TAGOIO__RELAY__MQTT__PASSWORD
-TAGOIO__RELAY__MQTT__BROKER_TLS_CA
-TAGOIO__RELAY__MQTT__BROKER_TLS_CERT
-TAGOIO__RELAY__MQTT__BROKER_TLS_KEY
+To configure the TagoIO MQTT Relay, you can either use environment variables or edit the `config.toml` file directly. Below are the available configuration parameters:
 
-Sheel example
+### Environment Variables
+
 ```sh
 export TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
 export TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
@@ -149,6 +142,8 @@ export TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
 ```
 
+### `config.toml`
+
 The `config.toml` file contains the Relay parameters. Here is a reference:
 
 ```toml
@@ -156,6 +151,8 @@ The `config.toml` file contains the Relay parameters. Here is a reference:
 network_token="Your-Network-Token"
 authorization_token="Your-Authorization-Token"
 tagoio_url="https://api.tago.io"
+
+# The Relay will listen on this port for incoming messages from TagoIO 
 downlink_port="3001"
 
 [relay.mqtt]
@@ -166,6 +163,11 @@ port=1883
 subscribe=["/tago/#", "/topic/+"]
 username="my-username"
 password="my-password"
+
+# TLS Certificates for the MQTT Broker (optional)
+# broker_tls_ca=""
+# broker_tls_cert=""
+# broker_tls_key=""
 ```
 
 ## License
@@ -174,4 +176,4 @@ The TagoIO MQTT Relay is licensed under the Apache License. See the [LICENSE](./
 
 ---
 
-Thank you for using TagoIO MQTT Relay! If you have any questions or need further assistance, feel free to reach out via [GitHub Issues](#) or our [community forum](#). 🚀
+Thank you for using TagoIO MQTT Relay! If you have any questions or need further assistance, feel free to reach out via [GitHub Issues](https://github.com/tago-io/mqtt-relay/issues) or our [community forum](https://community.tago.io). 🚀
