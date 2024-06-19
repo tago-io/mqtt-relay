@@ -29,8 +29,20 @@ ADD . ${TAGOIO_SOURCE_FOLDER}
 
 RUN touch .env
 
-# Build the project
-RUN cargo build --release
+# Determine the target based on the platform
+RUN set -e; \
+    TARGET=$(uname -m); \
+    if [ "$TARGET" = "x86_64" ]; then \
+        TARGET="x86_64-unknown-linux-gnu"; \
+    elif [ "$TARGET" = "aarch64" ]; then \
+        TARGET="aarch64-unknown-linux-gnu"; \
+    elif [ "$TARGET" = "armv7l" ]; then \
+        TARGET="armv7-unknown-linux-gnueabihf"; \
+    else \
+        echo "Unsupported architecture: $TARGET"; exit 1; \
+    fi; \
+    rustup target add $TARGET && \
+    cargo build --release --target $TARGET
 
 # Unset the SSL environment variables
 RUN unset CARGO_SERVER_SSL_CA CARGO_SERVER_SSL_CERT CARGO_SERVER_SSL_KEY
