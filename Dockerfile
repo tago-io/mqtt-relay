@@ -17,10 +17,10 @@ RUN /bin/bash -c 'if [ -z "$CARGO_SERVER_SSL_CA" ]; then echo "Error: CARGO_SERV
 
 # Install dependencies
 RUN apt update
-RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential cmake clang
+RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential g++-aarch64-linux-gnu libc6-dev-arm64-cross
 
 # Install cross
-RUN cargo install cross
+RUN rustup target add aarch64-unknown-linux-gnu
 
 # Set up the build environment
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
@@ -30,7 +30,7 @@ ADD . ${TAGOIO_SOURCE_FOLDER}
 RUN touch .env
 
 # Build the project
-RUN cross build --release
+RUN cargo build --release
 
 # Unset the SSL environment variables
 RUN unset CARGO_SERVER_SSL_CA CARGO_SERVER_SSL_CERT CARGO_SERVER_SSL_KEY
