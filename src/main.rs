@@ -30,10 +30,16 @@ enum Commands {
                   Examples:\n\
                   - Initialize with default path:\n\
                     tago-relay init\n\
+                  - Initialize with verbose mode:\n\
+                    tago-relay init --verbose info,error\n\
                   - Initialize with custom path:\n\
                     tago-relay init --config-path /path/to/config"
   )]
   Init {
+    /// Verbose mode (-v)
+    #[arg(short, long)]
+    verbose: Option<String>,
+
     /// Path to the configuration file
     #[arg(short, long)]
     config_path: Option<String>,
@@ -48,7 +54,7 @@ enum Commands {
                   - Start with default configuration:\n\
                     tago-relay start\n\
                   - Start with verbose mode:\n\
-                    tago-relay start --verbose info,mqtt\n\
+                    tago-relay start --verbose info,error,mqtt,network\n\
                   - Start with custom configuration path:\n\
                     tago-relay start --config-path /path/to/config.toml"
   )]
@@ -63,22 +69,35 @@ enum Commands {
   },
 }
 
+fn init_log_level(verbose: &Option<String>) {
+  let log_level: String = verbose
+    .as_ref()
+    .map(|v| v.to_string())
+    .unwrap_or_else(|| "error,info".to_string());
+
+  env_logger::init_from_env(env_logger::Env::new().default_filter_or(log_level));
+}
+
 #[tokio::main]
 async fn main() {
   let cli = Cli::parse();
+  // Initialize log level
+  match &cli.command {
+    Commands::Init { verbose, .. } => init_log_level(verbose),
+    Commands::Start { verbose, .. } => init_log_level(verbose),
+  }
 
   match &cli.command {
-    Commands::Init { config_path } => {
+    Commands::Init {
+      verbose: _,
+      config_path,
+    } => {
       init_config(config_path.as_deref());
     }
-    Commands::Start { verbose, config_path } => {
-      let log_level: String = verbose
-        .as_ref()
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| "error,info".to_string());
-
-      env_logger::init_from_env(env_logger::Env::new().default_filter_or(log_level));
-
+    Commands::Start {
+      verbose: _,
+      config_path,
+    } => {
       let config = utils::fetch_config_file(config_path.clone());
       if let Some(config) = config {
         *CONFIG_FILE.write().unwrap() = Some(config);

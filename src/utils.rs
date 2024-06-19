@@ -33,7 +33,11 @@ fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
       std::path::PathBuf::from(config_path_str)
     });
 
-  config_path
+  if config_path.is_dir() {
+    config_path.join(".tagoio-mqtt-relay.toml")
+  } else {
+    config_path
+  }
 }
 
 /**
@@ -42,7 +46,7 @@ fn get_config_path(user_path: Option<String>) -> std::path::PathBuf {
 pub fn init_config(user_path: Option<impl AsRef<str>>) {
   let config_path = get_config_path(user_path.map(|s| s.as_ref().to_string()));
   if config_path.exists() {
-    log::error!(target: "error", "Configuration file already exists.");
+    log::error!(target: "error", "Configuration file already exists: {}", config_path.display());
     std::process::exit(1);
   }
 
@@ -52,7 +56,10 @@ pub fn init_config(user_path: Option<impl AsRef<str>>) {
     std::fs::create_dir_all(config_dir).expect("Failed to create config directory");
   }
 
-  std::fs::write(&config_path, DEFAULT_CONFIG).expect("Failed to create default config file");
+  std::fs::write(&config_path, DEFAULT_CONFIG).unwrap_or_else(|err| {
+    log::error!(target: "error", "Failed to create default config file: {}", err);
+    std::process::exit(1);
+  });
 
   log::info!("Configuration file created at {}", config_path.display());
 }
