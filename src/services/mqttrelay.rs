@@ -55,7 +55,7 @@ pub async fn run_mqtt_relay_connection(relay_cfg: Arc<RelayConfig>, publish_rx: 
       return;
     }
     let backoff_duration = calculate_backoff(backoff_retry_attempts);
-    log::info!(target: "mqtt", "Retrying in {:?}", backoff_duration);
+    log::warn!(target: "mqtt", "Disconnected from MQTT broker. Retrying in {:?}", backoff_duration);
     publish_task.abort();
     sleep(backoff_duration).await;
     backoff_retry_attempts += 1;
