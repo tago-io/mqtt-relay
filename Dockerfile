@@ -16,7 +16,7 @@ RUN /bin/bash -c 'if [ -z "$CARGO_SERVER_SSL_CA" ]; then echo "Error: CARGO_SERV
     if [ -z "$CARGO_SERVER_SSL_KEY" ]; then echo "Error: CARGO_SERVER_SSL_KEY is not set"; exit 1; fi'
 
 RUN apt update
-RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential cmake
+RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential cmake clang
 
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}

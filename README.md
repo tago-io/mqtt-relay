@@ -46,7 +46,7 @@ Before you begin, ensure you have:
 
 ### Installation
 
-1. **Download the Binary**: Get the `tagoio-relay` binary from the [GitHub releases page](./releases/latest).
+1. **Download the Binary**: Get the `tagoio-relay` binary from the [GitHub releases page](https://github.com/tago-io/mqtt-relay/releases/latest).
 2. **Set Permission Rights**: Give the binary executable permissions:
    ```sh
    chmod +x tagoio-relay
