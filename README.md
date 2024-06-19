@@ -64,8 +64,11 @@ Before you begin, ensure you have:
    - Enter the [Middleware Endpoint](#middleware-endpoint-optional) for your Relay (Optional, allows publishing from TagoIO to the Relay).
    - Enable Serial and write a Payload Parser:
      ```js
+     // The Payload Parser runs every time a message is received from the Broker
      if (Array.isArray(payload)) {
+        // Relay sends the "payload" variable by default
        const payload_received = payload.find(x => x.variable === "payload");
+       // Extract the serial from the last element of the topic (e.g., /device/SERIAL)
        serial = payload_received?.metadata.topic.split("/").pop();
      }
      ```
