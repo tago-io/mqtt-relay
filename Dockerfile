@@ -5,27 +5,19 @@ ARG CARGO_SERVER_SSL_CA
 ARG CARGO_SERVER_SSL_CERT
 ARG CARGO_SERVER_SSL_KEY
 
-# Decode the base64 encoded environment variables and validate them
-RUN export CARGO_SERVER_SSL_CA=$(echo "${CARGO_SERVER_SSL_CA}" | base64 -d) &&
-  export CARGO_SERVER_SSL_CERT=$(echo "${CARGO_SERVER_SSL_CERT}" | base64 -d) &&
-  export CARGO_SERVER_SSL_KEY=$(echo "${CARGO_SERVER_SSL_KEY}" | base64 -d) &&
-  if [ -z "$CARGO_SERVER_SSL_CA" ]; then
-    echo "Error: CARGO_SERVER_SSL_CA is not set"
-    exit 1
-  fi &&
-  if [ -z "$CARGO_SERVER_SSL_CERT" ]; then
-    echo "Error: CARGO_SERVER_SSL_CERT is not set"
-    exit 1
-  fi &&
-  if [ -z "$CARGO_SERVER_SSL_KEY" ]; then
-    echo "Error: CARGO_SERVER_SSL_KEY is not set"
-    exit 1
-  fi
+# Decode the base64 encoded environment variables
+RUN export CARGO_SERVER_SSL_CA=$(echo "${CARGO_SERVER_SSL_CA}" | base64 -d)
+RUN export CARGO_SERVER_SSL_CERT=$(echo "${CARGO_SERVER_SSL_CERT}" | base64 -d)
+RUN export CARGO_SERVER_SSL_KEY=$(echo "${CARGO_SERVER_SSL_KEY}" | base64 -d)
+
+# Validate that the SSL environment variables are set
+RUN /bin/bash -c 'if [ -z "$CARGO_SERVER_SSL_CA" ]; then echo "Error: CARGO_SERVER_SSL_CA is not set"; exit 1; fi && \
+    if [ -z "$CARGO_SERVER_SSL_CERT" ]; then echo "Error: CARGO_SERVER_SSL_CERT is not set"; exit 1; fi && \
+    if [ -z "$CARGO_SERVER_SSL_KEY" ]; then echo "Error: CARGO_SERVER_SSL_KEY is not set"; exit 1; fi'
 
 # Install dependencies
-RUN apt update && apt install -y --no-install-recommends \
-  protobuf-compiler libssl-dev gcc pkg-config build-essential cmake musl-tools &&
-  rm -rf /var/lib/apt/lists/*
+RUN apt update
+RUN apt install -y protobuf-compiler libssl-dev gcc pkg-config build-essential cmake clang
 
 # Install cross
 RUN cargo install cross
