@@ -12,6 +12,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [arm64, amd64]
     environment: PROD
 
     steps:
@@ -38,9 +41,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+          # linux/arm64/v8,linux/amd64
       - name: Build and deploy images
         env:
           CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
           CARGO_SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
           CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
-        run: bash dockerhub.sh ${{ github.event.inputs.version }}
+        run: bash dockerhub.sh linux/${{ matrix.architecture }} ${{ github.event.inputs.version || github.event.release.tag_name }}

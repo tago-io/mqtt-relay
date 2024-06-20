@@ -1,11 +1,22 @@
 #!/bin/bash
-# Ensure a version is provided
+# Ensure a platform is provided
 if [ -z "$1" ]; then
+  echo "Error: No platform provided."
+  exit 1
+fi
+
+# Ensure a version is provided
+if [ -z "$2" ]; then
   echo "Error: No version provided."
   exit 1
 fi
 
-FULL_VERSION=$1
+PLATFORM=$1
+if [ "$PLATFORM" == "linux/arm64" ]; then
+  PLATFORM="linux/arm64/v8"
+fi
+
+FULL_VERSION=$2
 
 SPLIT=(${FULL_VERSION//./ })
 MAJOR=${SPLIT[0]}
@@ -43,7 +54,7 @@ docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
   --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT_BASE64} \
   --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY_BASE64} \
-  --platform linux/arm64/v8,linux/amd64 \
+  --platform ${PLATFORM} \
   --tag tagoio/relay \
   --tag tagoio/relay:debian \
   --tag tagoio/relay:bookworm \
