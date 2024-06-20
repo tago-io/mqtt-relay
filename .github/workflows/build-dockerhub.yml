@@ -58,4 +58,4 @@ jobs:
           CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
           CARGO_SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
           CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
-        run: bash dockerhub.sh linux/${{ matrix.architecture }} ${{ github.event.inputs.version || github.event.release.tag_name }}
+        run: bash dockerhub.sh ${{ matrix.architecture }} ${{ github.event.inputs.version || github.event.release.tag_name }}
