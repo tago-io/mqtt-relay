@@ -10,25 +10,23 @@ env:
 
 jobs:
   build:
-    name: Build and Release - ${{ github.ref_name }}
+    name: Build and Release - ${{ matrix.filename }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os:
-          - windows-latest
-          - macOS-latest
-          - ubuntu-latest
-          - ubuntu-latest
-        target:
-          - x86_64-pc-windows-msvc
-          - aarch64-apple-darwin
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-musl
-        filename:
-          - tagoio-relay-win-x64
-          - tagoio-relay-mac-arm64
-          - tagoio-relay-linux-x64
-          - tagoio-relay-linux-arm64
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            filename: tagoio-relay-win-x64
+          - os: macOS-latest
+            target: aarch64-apple-darwin
+            filename: tagoio-relay-mac-arm64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            filename: tagoio-relay-linux-x64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            filename: tagoio-relay-linux-arm64
     environment: PROD
     env:
       CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
@@ -36,7 +34,7 @@ jobs:
       CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
 
     steps:
-      # Checkout the code
+      # Preparation Steps
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -55,6 +53,7 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-musl'
         run: cargo install cross
 
+        # Windows Only Steps
       - name: Install NASM (Windows only)
         if: matrix.os == 'windows-latest'
         uses: ilammy/setup-nasm@v1
@@ -69,6 +68,7 @@ jobs:
           args: "--locked --release"
           strip: true
 
+      # Linux and macOS Steps
       - name: Build Binary (Linux and macOS)
         if: matrix.os != 'windows-latest'
         run: |
