@@ -2,4 +2,4 @@
 image = "rustembedded/cross:x86_64-pc-windows-msvc-0.2.1"
 
 [target.aarch64-unknown-linux-gnu]
-image = "rustembedded/cross:aarch64-unknown-linux-gnu"
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:main"
