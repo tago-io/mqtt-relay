@@ -42,13 +42,12 @@ jobs:
         run: touch .env
 
       - name: Install cross (Linux ARM64 only)
-        if: matrix.config.target == 'aarch64-unknown-linux-musl'
+        if: matrix.config.platform == 'linux-arm64'
         run: cargo install cross
 
       - name: Build Binary
-        if: matrix.config.os != 'windows-latest'
         run: |
-          if [ "${{ matrix.config.target }}" == "aarch64-unknown-linux-musl" ]; then
+          if [ "${{ matrix.config.platform }}" == "linux-arm64" ]; then
             cross build --locked --release --target ${{ matrix.config.target }}
           else
             cargo build --locked --release --target ${{ matrix.config.target }}
