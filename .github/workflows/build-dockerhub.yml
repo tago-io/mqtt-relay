@@ -18,7 +18,7 @@ jobs:
           - architecture: linux/arm64/v8
             os: ubuntu-latest
           - architecture: linux/amd64
-            os: macOS-latest
+            os: ubuntu-latest
     environment: PROD
 
     steps:
