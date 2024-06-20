@@ -12,6 +12,7 @@ env:
 
 jobs:
   build:
+    name: Build and Release - ${{ github.ref_name }} - mac-arm64
     runs-on: macOS-latest
     environment: PROD
     env:

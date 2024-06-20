@@ -106,8 +106,9 @@ Specific docker documentation can be found on the [Docker Hub page](https://hub.
 
 ### Image Variants
 
-- **tagoio/relay:<version>**: Main image for general use.
-- **tagoio/relay:bullseye**: Based on Debian 11.
+- **tagoio/relay:latest**: Main image for general use.
+- **tagoio/relay:<version>**: Specific version of the image.
+- **tagoio/relay:bookworm**: Based on Debian Bookworm.
 
 ## CLI Commands
 
