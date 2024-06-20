@@ -56,9 +56,9 @@ docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   --platform linux/arm64/v8,linux/amd64 \
   --tag tagoio/relay \
   --tag tagoio/relay:debian \
-  --tag tagoio/relay:bullseye \
-  --tag tagoio/relay:${MAJOR}.${MINOR}-bullseye \
-  --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-bullseye \
+  --tag tagoio/relay:bookworm \
+  --tag tagoio/relay:${MAJOR}.${MINOR}-bookworm \
+  --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-bookworm \
   --tag tagoio/relay:${MAJOR}.${MINOR} \
   --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH} \
   .
