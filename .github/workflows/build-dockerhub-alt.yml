@@ -82,15 +82,6 @@ jobs:
           name: tagoio-relay-${{ matrix.platform }}
           path: build
 
-      - name: Display structure of downloaded files
-        run: ls -R
-
-      - name: Display structure of downloaded files
-        run: ls -R build
-
-      - name: Rename artifact
-        run: mv ./build/tagoio-relay-${{ matrix.platform }} ./build/tagoio-relay
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
