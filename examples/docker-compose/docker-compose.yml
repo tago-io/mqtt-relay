@@ -5,6 +5,6 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./config.toml:./tago-io/.tagoio-mqtt-relay.toml
+      - ./config.toml:/tago-io/.tagoio-mqtt-relay.toml
     environment:
       - TAGOIO__RELAY__CONFIG_PATH=/tago-io/.tagoio-mqtt-relay.toml
