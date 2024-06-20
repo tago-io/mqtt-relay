@@ -5,10 +5,10 @@ on:
   release:
     types: [published]
 
-env:
-  CARGO_TERM_COLOR: always
-  TARGET: x86_64-unknown-linux-gnu
-  FILENAME: tagoio-relay-linux-x64
+# env:
+#   CARGO_TERM_COLOR: always
+#   TARGET: x86_64-unknown-linux-gnu
+#   FILENAME: tagoio-relay-linux-x64
 
 jobs:
   build:

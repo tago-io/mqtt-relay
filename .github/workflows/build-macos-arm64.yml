@@ -1,9 +1,9 @@
 name: Build for mac-arm64
 
-on:
-  workflow_dispatch:
-  release:
-    types: [published]
+# on:
+#   workflow_dispatch:
+#   release:
+#     types: [published]
 
 env:
   CARGO_TERM_COLOR: always

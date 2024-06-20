@@ -11,10 +11,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         architecture: [arm64, amd64]
+        os: [ubuntu-latest, macOS-latest]
     environment: PROD
 
     steps:

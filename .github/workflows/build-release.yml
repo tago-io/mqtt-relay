@@ -1,0 +1,129 @@
+name: Build release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and Release - ${{ github.ref_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - macOS-latest
+          - ubuntu-latest
+          - ubuntu-latest
+        target:
+          - x86_64-pc-windows-msvc
+          - aarch64-apple-darwin
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
+        filename:
+          - tagoio-relay-win-x64
+          - tagoio-relay-mac-arm64
+          - tagoio-relay-linux-x64
+          - tagoio-relay-linux-arm64
+    environment: PROD
+    env:
+      CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      CARGO_SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain and components
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "${{ matrix.target }}"
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Create empty .env file
+        run: touch .env
+
+      - name: Install cross (Linux ARM64 only)
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: cargo install cross
+
+      - name: Install NASM (Windows only)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/setup-nasm@v1
+
+      - name: Build Binary (Windows only)
+        if: matrix.os == 'windows-latest'
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "build"
+          target: "${{ matrix.TARGET }}"
+          toolchain: "stable"
+          args: "--locked --release"
+          strip: true
+
+      - name: Build Binary (Linux and macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          if [ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]; then
+            cross build --locked --release --target ${{ matrix.target }}
+          else
+            cargo build --locked --release --target ${{ matrix.target }}
+          fi
+
+      - name: Run tests
+        if: matrix.os != 'windows-latest'
+        run: |
+          if [ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]; then
+            cross test --verbose --target ${{ matrix.target }}
+          else
+            cargo test --verbose
+          fi
+
+      # Package the binary for the current OS (zip for Windows, tar.gz for others)
+      - name: Package Binary
+        run: |
+          cd target/${{ matrix.target }}/release
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            7z a ../../../${{ matrix.filename }}.zip tagoio-relay.exe
+          else
+            tar cvf - tagoio-relay | gzip > ../../../${{ matrix.filename }}.tar.gz
+          fi
+
+      # Generate SHA-256 checksum if this is a release (Ignoring windows for now)
+      - name: Generate SHA-256 checksum
+        if: github.event_name == 'release' && matrix.os != 'windows-latest'
+        run: shasum -a 256 ${{ matrix.filename }}.tar.gz > ${{ matrix.filename }}.tar.gz.sha256
+
+      # Upload to GitHub Release if this is a release
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            if [ "${{ matrix.os }}" == "windows-latest" ]; then
+              ./${{ matrix.filename }}.zip
+            else
+              ./${{ matrix.filename }}.tar.gz
+              ./${{ matrix.filename }}.tar.gz.sha256
+            fi
+
+      # Upload artifacts if this is not a release
+      - name: Upload artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.filename }}
+          path: |
+            if [ "${{ matrix.os }}" == "windows-latest" ]; then
+              ./${{ matrix.filename }}.zip
+            else
+              ./${{ matrix.filename }}.tar.gz
+            fi
