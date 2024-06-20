@@ -1,4 +1,4 @@
-name: Deploy to DockerHub
+name: Deploy to DockerHub (Alt)
 
 on:
   workflow_dispatch:
@@ -6,24 +6,91 @@ on:
       version:
         description: "Version"
         required: true
+        default: "1.0.0"
   release:
     types: [published]
 
 jobs:
   build:
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - { platform: linux-x64, os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { platform: linux-arm64, os: ubuntu-latest, target: aarch64-unknown-linux-gnu }
+    environment: PROD
+    env:
+      CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
+      CARGO_SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
+      CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
+      FILENAME: ${{ matrix.config.platform }}
+
+    steps:
+      # Preparation Steps
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain and components
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "${{ matrix.config.target }}"
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Create empty .env file
+        run: touch .env
+
+      - name: Install cross (Linux ARM64 only)
+        if: matrix.config.platform == 'linux-arm64'
+        run: cargo install cross
+
+      - name: Build Binary
+        run: |
+          if [ "${{ matrix.config.platform }}" == "linux-arm64" ]; then
+            cross build --locked --release --target ${{ matrix.config.target }}
+          else
+            cargo build --locked --release --target ${{ matrix.config.target }}
+          fi
+      # - name: Run Tests
+      #   run: cross test --verbose --target ${{ matrix.config.target }}
+
+      # Upload artifacts if this is not a release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tagoio-relay-${{ env.FILENAME }}
+          path: target/${{ matrix.config.target }}/release/tagoio-relay
+
+  push-to-dockerhub:
+    needs: build
+
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
-          - architecture: linux/arm64/v8
-            os: ubuntu-latest
-          - architecture: linux/amd64
-            os: ubuntu-latest
-    environment: PROD
+          - { platform: linux-x64, os: ubuntu-latest, architecture: linux/amd64 }
+          - { platform: linux-arm64, os: ubuntu-latest, architecture: linux/arm64/v8 }
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tagoio-relay-${{ matrix.platform }}
+          path: build
+
+      - name: List files
+        run: ls -la build
+
+      - name: Ensure tagoio-relay exists
+        run: |
+          if [ ! -f build/tagoio-relay ]; then
+            echo "tagoio-relay not found in build folder"
+            exit 1
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -47,8 +114,4 @@ jobs:
 
           # linux/arm64/v8,linux/amd64
       - name: Build and deploy images
-        env:
-          CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
-          CARGO_SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
-          CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
         run: bash dockerhub.sh ${{ matrix.architecture }} ${{ github.event.inputs.version || github.event.release.tag_name }}
