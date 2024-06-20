@@ -38,16 +38,6 @@ CARGO_SERVER_SSL_CA_BASE64=$(echo "$CARGO_SERVER_SSL_CA" | base64 -w 0)
 CARGO_SERVER_SSL_CERT_BASE64=$(echo "$CARGO_SERVER_SSL_CERT" | base64 -w 0)
 CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64 -w 0)
 
-# Alpine
-# docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
-#   --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
-#   --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT_BASE64} \
-#   --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY_BASE64} \
-#   --platform linux/arm64/v8,linux/amd64 \
-#   --tag tagoio/relay:alpine \
-#   --tag tagoio/relay:${MAJOR}.${MINOR}-alpine \
-#   --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-alpine .
-
 # Debian
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
