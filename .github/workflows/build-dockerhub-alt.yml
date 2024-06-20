@@ -82,6 +82,15 @@ jobs:
           name: tagoio-relay-${{ matrix.platform }}
           path: build
 
+      - name: List files
+        run: ls -la build
+
+      - name: Ensure tagoio-relay exists
+        run: |
+          if [ ! -f build/tagoio-relay ]; then
+            echo "tagoio-relay not found in build folder"
+            exit 1
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
