@@ -20,35 +20,21 @@ env:
 
 jobs:
   build:
-    name: Build & Release - ${{ matrix.platform }}
-    runs-on: ${{ matrix.os }}
+    name: Build & Release - ${{ matrix.config.platform }}
+    runs-on: ${{ matrix.config.os }}
     strategy:
       matrix:
-        include:
-          - platform: win-x64
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'win-x64'}}
-          - platform: mac-arm64
-            os: macOS-latest
-            target: aarch64-apple-darwin
-            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'win-x64'}}
-          - platform: linux-x64
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'linux-x64'}}
-          - platform: linux-arm64
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-musl
-            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'linux-arm64'}}
-        exclude:
-          - { run: true }
+        config:
+          - { platform: win-x64, os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { platform: mac-arm64, os: macOS-latest, target: aarch64-apple-darwin }
+          - { platform: linux-x64, os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { platform: linux-arm64, os: ubuntu-latest, target: aarch64-unknown-linux-musl }
     environment: PROD
     env:
       CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
       CARGO_SERVER_SSL_CERT: ${{ secrets.SERVER_SSL_CERT }}
       CARGO_SERVER_SSL_KEY: ${{ secrets.SERVER_SSL_KEY }}
-      FILENAME: tagoio-relay-${{ matrix.platform }}
+      FILENAME: tagoio-relay-${{ matrix.config.platform }}
 
     steps:
       # Preparation Steps
@@ -58,7 +44,7 @@ jobs:
       - name: Install Rust toolchain and components
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: "${{ matrix.target }}"
+          targets: "${{ matrix.config.target }}"
 
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
@@ -67,22 +53,22 @@ jobs:
         run: touch .env
 
       - name: Install cross (Linux ARM64 only)
-        if: matrix.target == 'aarch64-unknown-linux-musl'
+        if: matrix.config.target == 'aarch64-unknown-linux-musl'
         run: cargo install cross
 
         ####
         ## Windows Only Steps
         ####
       - name: Install NASM (Windows only)
-        if: matrix.os == 'windows-latest'
+        if: matrix.config.os == 'windows-latest'
         uses: ilammy/setup-nasm@v1
 
       - name: Build Binary (Windows only)
-        if: matrix.os == 'windows-latest'
+        if: matrix.config.os == 'windows-latest'
         uses: houseabsolute/actions-rust-cross@v0
         with:
           command: "build"
-          target: "${{ matrix.TARGET }}"
+          target: "${{ matrix.config.TARGET }}"
           toolchain: "stable"
           args: "--locked --release"
           strip: true
@@ -91,19 +77,19 @@ jobs:
         # Linux and macOS Steps
         ####
       - name: Build Binary (Linux and macOS)
-        if: matrix.os != 'windows-latest'
+        if: matrix.config.os != 'windows-latest'
         run: |
-          if [ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]; then
-            cross build --locked --release --target ${{ matrix.target }}
+          if [ "${{ matrix.config.target }}" == "aarch64-unknown-linux-musl" ]; then
+            cross build --locked --release --target ${{ matrix.config.target }}
           else
-            cargo build --locked --release --target ${{ matrix.target }}
+            cargo build --locked --release --target ${{ matrix.config.target }}
           fi
 
       - name: Run tests
-        if: matrix.os != 'windows-latest'
+        if: matrix.config.os != 'windows-latest'
         run: |
-          if [ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]; then
-            cross test --verbose --target ${{ matrix.target }}
+          if [ "${{ matrix.config.target }}" == "aarch64-unknown-linux-musl" ]; then
+            cross test --verbose --target ${{ matrix.config.target }}
           else
             cargo test --verbose
           fi
@@ -112,8 +98,8 @@ jobs:
       - name: Package Binary
         shell: bash
         run: |
-          cd target/${{ matrix.target }}/release
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          cd target/${{ matrix.config.target }}/release
+          if [ "${{ matrix.config.os }}" == "windows-latest" ]; then
             7z a ../../../${{ env.filename }}.zip tagoio-relay.exe
           else
             tar cvf - tagoio-relay | gzip > ../../../${{ env.FILENAME }}.tar.gz
@@ -121,7 +107,7 @@ jobs:
 
       # Generate SHA-256 checksum if this is a release (Ignoring windows for now)
       - name: Generate SHA-256 checksum
-        if: github.event_name == 'release' && matrix.os != 'windows-latest'
+        if: github.event_name == 'release' && matrix.config.os != 'windows-latest'
         run: shasum -a 256 ${{ env.FILENAME }}.tar.gz > ${{ env.FILENAME }}.tar.gz.sha256
         shell: bash
 
@@ -131,7 +117,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            if [ "${{ matrix.config.os }}" == "windows-latest" ]; then
               ./${{ env.FILENAME }}.zip
             else
               ./${{ env.FILENAME }}.tar.gz
@@ -145,7 +131,7 @@ jobs:
         with:
           name: ${{ env.FILENAME }}
           path: |
-            if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            if [ "${{ matrix.config.os }}" == "windows-latest" ]; then
               ./${{ env.FILENAME }}.zip
             else
               ./${{ env.FILENAME }}.tar.gz
