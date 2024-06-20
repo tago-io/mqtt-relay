@@ -26,7 +26,7 @@ This software bridges your MQTT Broker and the TagoIO platform, allowing seamles
 
 ## Introduction
 
-The TagoIO MQTT Relay connects to your MQTT Broker on predefined topics and redirects the information to TagoIO Devices. It uses TagoIO Integration Network and Connector, alongside an Authorization Key from your TagoIO Profile.
+The TagoIO MQTT Relay connects to your MQTT Broker on predefined topics and redirects the information to TagoIO Devices. It uses TagoIO Integration Network and Connector, alongside an [Authorization Key](https://admin.tago.io/devices/authorization) from your TagoIO Profile.
 
 ## Features
 
@@ -60,7 +60,7 @@ Before you begin, ensure you have:
 ### Configuration
 
 1. **Create a Network in TagoIO**:
-   - Navigate to Integrations in your TagoIO Profile and create a new Network.
+   - Navigate to [Integrations](https://admin.tago.io/integrations/network) in your TagoIO [Profile](https://help.tago.io/portal/en/kb/articles/198-profiles) and create a new Network.
    - Enter the [Middleware Endpoint](#middleware-endpoint-optional) for your Relay (Optional, allows publishing from TagoIO to the Relay).
    - Enable Serial and write a Payload Parser:
      ```js
@@ -75,7 +75,7 @@ Before you begin, ensure you have:
 
 2. **Generate Network Token**: Generate and save the Network Token.
 3. **Create a Connector**: Create a Connector for your Network.
-4. **Generate Authorization**: Navigate to Devices > Authorizations in TagoIO and generate an authorization token.
+4. **Generate Authorization**: Navigate to [Devices > Authorizations](https://admin.tago.io/devices/authorization) in TagoIO and generate an authorization token.
 5. **Create a Device**: Create a Device with a Serial to use later on the Broker.
 6. **Set Up an MQTT Broker**: Create or use a public MQTT Broker.
 7. **Gather Broker Details**: Obtain the Address, Port, and Credentials of your MQTT Broker.
