@@ -3,8 +3,25 @@ services:
     image: tagoio/relay:latest
     restart: always
     ports:
+      # Port for the TCP server
       - "3001:3001"
     volumes:
       - ./config.toml:/tago-io/.tagoio-mqtt-relay.toml
-    environment:
-      - TAGOIO__RELAY__CONFIG_PATH=/tago-io/.tagoio-mqtt-relay.toml
+
+    # Uncomment next lines to configure using environment variables instead of toml
+    # environment:
+    #   - TAGOIO__RELAY__CONFIG_PATH=/tago-io/.tagoio-mqtt-relay.toml
+    #   - TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
+    #   - TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
+    #   - TAGOIO__RELAY__TAGOIO_URL="https://api.tago.io"
+    #   - TAGOIO__RELAY__DOWNLINK_PORT="3001"
+    #   - TAGOIO__RELAY__MQTT__CLIENT_ID="tagoio-relay"
+    #   - TAGOIO__RELAY__MQTT__TLS_ENABLED="false"
+    #   - TAGOIO__RELAY__MQTT__ADDRESS="localhost"
+    #   - TAGOIO__RELAY__MQTT__PORT="1883"
+    #   - TAGOIO__RELAY__MQTT__SUBSCRIBE="/tago/# /topic/+"
+    #   - TAGOIO__RELAY__MQTT__USERNAME="my-username"
+    #   - TAGOIO__RELAY__MQTT__PASSWORD="my-password"
+    #   - TAGOIO__RELAY__MQTT__BROKER_TLS_CA=""
+    #   - TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
+    #   - TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""

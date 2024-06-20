@@ -46,7 +46,7 @@ fi
 # CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64 -w 0)
 
 # Debian
-cd deploy
+cd build
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   \
   --platform ${PLATFORM} \
