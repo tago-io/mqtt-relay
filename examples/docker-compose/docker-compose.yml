@@ -6,11 +6,11 @@ services:
       # Port for the TCP server
       - "3001:3001"
     volumes:
-      - ./config.toml:/tago-io/.tagoio-mqtt-relay.toml
+      - ./config.toml:/root/.config/.tagoio-mqtt-relay.toml
 
     # Uncomment next lines to configure using environment variables instead of toml
     # environment:
-    #   - TAGOIO__RELAY__CONFIG_PATH=/tago-io/.tagoio-mqtt-relay.toml
+    #   - TAGOIO__RELAY__CONFIG_PATH=/root/.config/.tagoio-mqtt-relay.toml
     #   - TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
     #   - TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
     #   - TAGOIO__RELAY__TAGOIO_URL="https://api.tago.io"

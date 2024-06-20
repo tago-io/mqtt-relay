@@ -9,17 +9,11 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
 
-RUN ls -la .
-RUN ls -la ..
-
 COPY /tagoio-relay .
-COPY ../tagoio-relay .
-
-RUN ls -la
 
 # Add execute permissions to the tagoio-relay file
-RUN chmod +x /tago-io/tagoio-relay
-RUN /tago-io/tagoio-relay init
+RUN chmod +x tagoio-relay
+RUN ./tagoio-relay init
 
 EXPOSE 3001/tcp
 
