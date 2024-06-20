@@ -12,10 +12,6 @@ if [ -z "$2" ]; then
 fi
 
 PLATFORM=$1
-if [ "$PLATFORM" == "linux/arm64" ]; then
-  PLATFORM="linux/arm64/v8"
-fi
-
 FULL_VERSION=$2
 
 SPLIT=(${FULL_VERSION//./ })
