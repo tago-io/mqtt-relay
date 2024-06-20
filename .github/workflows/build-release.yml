@@ -3,7 +3,7 @@ name: Build release
 on:
   workflow_dispatch:
     inputs:
-      platform:
+      chosen_platform:
         description: "Select the platform"
         required: true
         type: choice
@@ -28,15 +28,21 @@ jobs:
           - platform: win-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
+            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'win-x64'}}
           - platform: mac-arm64
             os: macOS-latest
             target: aarch64-apple-darwin
+            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'win-x64'}}
           - platform: linux-x64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'linux-x64'}}
           - platform: linux-arm64
             os: ubuntu-latest
             target: aarch64-unknown-linux-musl
+            run: ${{github.event_name == 'release' || inputs.chosen_platform == 'linux-arm64'}}
+        exclude:
+          - { run: true }
     environment: PROD
     env:
       CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}
