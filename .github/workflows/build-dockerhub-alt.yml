@@ -90,6 +90,7 @@ jobs:
           if [ ! -f build/tagoio-relay ]; then
             echo "tagoio-relay not found in build folder"
             exit 1
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
