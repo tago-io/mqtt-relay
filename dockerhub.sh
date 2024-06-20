@@ -36,21 +36,19 @@ if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
 fi
 
 # Ensure CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY are set
-if [ -z "$CARGO_SERVER_SSL_CA" ] || [ -z "$CARGO_SERVER_SSL_CERT" ] || [ -z "$CARGO_SERVER_SSL_KEY" ]; then
-  echo "Error: SSL environment variables are not set."
-  exit 1
-fi
+# if [ -z "$CARGO_SERVER_SSL_CA" ] || [ -z "$CARGO_SERVER_SSL_CERT" ] || [ -z "$CARGO_SERVER_SSL_KEY" ]; then
+#   echo "Error: SSL environment variables are not set."
+#   exit 1
+# fi
 
-CARGO_SERVER_SSL_CA_BASE64=$(echo "$CARGO_SERVER_SSL_CA" | base64 -w 0)
-CARGO_SERVER_SSL_CERT_BASE64=$(echo "$CARGO_SERVER_SSL_CERT" | base64 -w 0)
-CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64 -w 0)
+# CARGO_SERVER_SSL_CA_BASE64=$(echo "$CARGO_SERVER_SSL_CA" | base64 -w 0)
+# CARGO_SERVER_SSL_CERT_BASE64=$(echo "$CARGO_SERVER_SSL_CERT" | base64 -w 0)
+# CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64 -w 0)
 
 # Debian
 cd deploy
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
-  --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
-  --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT_BASE64} \
-  --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY_BASE64} \
+  \
   --platform ${PLATFORM} \
   --tag tagoio/relay \
   --tag tagoio/relay:debian \
@@ -59,4 +57,6 @@ docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-bookworm \
   --tag tagoio/relay:${MAJOR}.${MINOR} \
   --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH} \
-  .
+  . # --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
+# --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT_BASE64} \
+# --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY_BASE64} \
