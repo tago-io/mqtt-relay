@@ -9,8 +9,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
 
-# Copy the target directory from the build stage
-# COPY --from=build /tagoio-relay .
+COPY /tagoio-relay .
 
 RUN /tago-io/tagoio-relay init
 
