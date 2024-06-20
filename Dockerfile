@@ -59,7 +59,6 @@ WORKDIR ${TAGOIO_SOURCE_FOLDER}
 # Copy the target directory from the build stage
 COPY --from=build ${TAGOIO_SOURCE_FOLDER}/target/*/release/tagoio-relay .
 
-RUN ls -la .
 RUN /tago-io/tagoio-relay init
 
 ENTRYPOINT ["/tago-io/tagoio-relay"]

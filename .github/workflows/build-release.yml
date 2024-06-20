@@ -52,10 +52,6 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      - name: Install cross (Linux ARM64 only)
-        if: matrix.config.target == 'aarch64-unknown-linux-musl'
-        run: cargo install cross
-
         ####
         ## Windows Only Steps
         ####
@@ -76,6 +72,10 @@ jobs:
         ####
         # Linux and macOS Steps
         ####
+      - name: Install cross (Linux ARM64 only)
+        if: matrix.config.target == 'aarch64-unknown-linux-musl'
+        run: cargo install cross
+
       - name: Build Binary (Linux and macOS)
         if: matrix.config.os != 'windows-latest'
         run: |
