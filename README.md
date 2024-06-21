@@ -127,12 +127,12 @@ tagoio-relay init [--config-path /path/to/config]
 Starts the MQTT Relay service.
 
 ```sh
-tagoio-relay start [--verbose info,error,mqtt,network] [--config-path /path/to/config.toml]
+tagoio-relay start [--verbose info,error,mqtt,network] [--config-path /path/to/.tagoio-mqtt-relay.toml]
 ```
 
 ## Configuration File and Environment Variables
 
-To configure the TagoIO MQTT Relay, you can either use environment variables or edit the `config.toml` file directly. Below are the available configuration parameters:
+To configure the TagoIO MQTT Relay, you can either use environment variables or edit the `.tagoio-mqtt-relay.toml` file directly. Below are the available configuration parameters:
 
 ### `.tagoio-mqtt-relay.toml`
 
@@ -163,22 +163,30 @@ password="my-password"
 # broker_tls_key=""
 ```
 ### Environment Variables
+The environment variables can be set directly in the shell, and they will override the values provided in the `.tagoio-mqtt-relay.toml` file. Use it as alternative in case you don't want to use or edit the configuration file.
 
 ```sh
 export TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
 export TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
 export TAGOIO__RELAY__TAGOIO_URL="https://api.tago.io"
 export TAGOIO__RELAY__DOWNLINK_PORT="3001"
+
+# MQTT Client Settings
 export TAGOIO__RELAY__MQTT__CLIENT_ID="tagoio-relay"
 export TAGOIO__RELAY__MQTT__TLS_ENABLED="false"
 export TAGOIO__RELAY__MQTT__ADDRESS="localhost"
 export TAGOIO__RELAY__MQTT__PORT="1883"
-export TAGOIO__RELAY__MQTT__SUBSCRIBE="/tago/# /topic/+"
 export TAGOIO__RELAY__MQTT__USERNAME="my-username"
 export TAGOIO__RELAY__MQTT__PASSWORD="my-password"
 export TAGOIO__RELAY__MQTT__BROKER_TLS_CA=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
+
+# Subscribe to multiple topics
+export TAGOIO__RELAY__MQTT__SUBSCRIBE__1="/tago/#" 
+export TAGOIO__RELAY__MQTT__SUBSCRIBE__2="/topic/+"
+
+# Change the path to the configuration file
 export TAGOIO__RELAY__CONFIG_PATH="/root/.config/.tagoio-mqtt-relay.toml"
 ```
 
