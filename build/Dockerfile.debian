@@ -1,6 +1,7 @@
 # Install runtime dependencies
 FROM debian:bookworm-slim
 ARG TAGOIO_SOURCE_FOLDER="/tago-io"
+ARG TARGETPLATFORM
 
 RUN apt update
 RUN apt install -y openssl build-essential netcat-traditional ca-certificates --no-install-recommends
@@ -9,7 +10,18 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
 
-COPY /tagoio-relay .
+COPY /debian-* .
+
+# Rename the correct executable based on the platform
+RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then \
+        mv debian-linux-amd64 tagoio-relay; \
+    elif [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
+        mv debian-linux-arm64 tagoio-relay; \
+    else \
+        echo "Unsupported platform: ${TARGETPLATFORM}"; \
+        exit 1; \
+    fi
+
 
 # Add execute permissions to the tagoio-relay file
 RUN chmod +x tagoio-relay

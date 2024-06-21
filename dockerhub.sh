@@ -1,18 +1,25 @@
 #!/bin/bash
 # Ensure a platform is provided
 if [ -z "$1" ]; then
-  echo "Error: No platform provided."
+  echo "Error: No distribution provided."
   exit 1
 fi
 
 # Ensure a version is provided
 if [ -z "$2" ]; then
+  echo "Error: No platform provided."
+  exit 1
+fi
+
+# Ensure a version is provided
+if [ -z "$3" ]; then
   echo "Error: No version provided."
   exit 1
 fi
 
-PLATFORM=$1
-FULL_VERSION=$2
+DISTRIBUTION=$1
+PLATFORM=$2
+FULL_VERSION=$3
 
 SPLIT=(${FULL_VERSION//./ })
 MAJOR=${SPLIT[0]}
@@ -35,28 +42,32 @@ if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
-# Ensure CARGO_SERVER_SSL_CA, CARGO_SERVER_SSL_CERT, and CARGO_SERVER_SSL_KEY are set
-# if [ -z "$CARGO_SERVER_SSL_CA" ] || [ -z "$CARGO_SERVER_SSL_CERT" ] || [ -z "$CARGO_SERVER_SSL_KEY" ]; then
-#   echo "Error: SSL environment variables are not set."
-#   exit 1
-# fi
+echo "Building for $DISTRIBUTION on $PLATFORM"
 
-# CARGO_SERVER_SSL_CA_BASE64=$(echo "$CARGO_SERVER_SSL_CA" | base64 -w 0)
-# CARGO_SERVER_SSL_CERT_BASE64=$(echo "$CARGO_SERVER_SSL_CERT" | base64 -w 0)
-# CARGO_SERVER_SSL_KEY_BASE64=$(echo "$CARGO_SERVER_SSL_KEY" | base64 -w 0)
+# Construct the tags
+if [ "$DISTRIBUTION" == "debian" ]; then
+  TAGS="--tag tagoio/relay \
+    --tag tagoio/relay:${DISTRIBUTION} \
+    --tag tagoio/relay:${MAJOR}.${MINOR} \
+    --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH} \
+    --tag tagoio/relay:bookworm \
+    --tag tagoio/relay:${MAJOR}.${MINOR}-bookworm \
+    --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-bookworm"
+elif [ "$DISTRIBUTION" == "alpine" ]; then
+  TAGS="--tag tagoio/relay:${DISTRIBUTION} \
+    --tag tagoio/relay:${MAJOR}.${MINOR}-alpine \
+    --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-alpine"
+else
+  echo "Error: Unknown distribution."
+  exit 1
+fi
 
+# Display the tags
+echo "Tags to be used: $TAGS"
 # Debian
 cd build
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
-  \
+  --file Dockerfile.${DISTRIBUTION} \
   --platform ${PLATFORM} \
-  --tag tagoio/relay \
-  --tag tagoio/relay:debian \
-  --tag tagoio/relay:bookworm \
-  --tag tagoio/relay:${MAJOR}.${MINOR}-bookworm \
-  --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-bookworm \
-  --tag tagoio/relay:${MAJOR}.${MINOR} \
-  --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH} \
-  . # --build-arg CARGO_SERVER_SSL_CA=${CARGO_SERVER_SSL_CA_BASE64} \
-# --build-arg CARGO_SERVER_SSL_CERT=${CARGO_SERVER_SSL_CERT_BASE64} \
-# --build-arg CARGO_SERVER_SSL_KEY=${CARGO_SERVER_SSL_KEY_BASE64} \
+  $TAGS \
+  .
