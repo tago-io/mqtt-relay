@@ -14,12 +14,12 @@ This example demonstrates how to set up the TagoIO MQTT Relay using Docker Compo
 ### Configuration
 
 - **File**: `docker-compose.yml`
-- **Description**: This configuration sets up the TagoIO MQTT Relay service with the necessary ports and volumes. You can configure the relay using a `config.toml` file or environment variables.
+- **Description**: This configuration sets up the TagoIO MQTT Relay service with the necessary ports and volumes. You can configure the relay using a `.tagoio-mqtt-relay.toml` file or environment variables.
 
 ### Usage
 
 1. Navigate to the `docker-compose` directory.
-2. Ensure the `config.toml` file is correctly configured.
+2. Ensure the `.tagoio-mqtt-relay.toml` file is correctly configured.
 3. Run the following command to start the service:
 
    ```sh
@@ -37,7 +37,7 @@ This example demonstrates how to set up the TagoIO MQTT Relay with an Eclipse Mo
 ### Usage
 
 1. Navigate to the `mosquitto-docker-compose` directory.
-2. Ensure the `config.toml` file is correctly configured if you prefer using it over environment variables.
+2. Ensure the `.tagoio-mqtt-relay.toml` file is correctly configured if you prefer using it over environment variables.
 3. Ensure the `mosquitto/config/mosquitto.conf` file is correctly configured for mosquitto.
 4. Run the following command to start the services:
 
