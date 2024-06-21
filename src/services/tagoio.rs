@@ -188,7 +188,7 @@ mod tests {
           client_id: Some("test_client_id".to_string()),
           tls_enabled: false,
           address: "localhost".to_string(),
-          port: 1883,
+          port: "1883".to_string(),
           subscribe: vec!["/tago/#".to_string(), "/device/+".to_string()],
           username: Some("test_username".to_string()),
           password: Some("test_password".to_string()),

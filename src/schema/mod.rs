@@ -1,5 +1,3 @@
-use regex::Regex;
-
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct RelayConfig {
@@ -16,12 +14,13 @@ pub struct ConfigFile {
   pub downlink_port: Option<String>, // Default is "3000"
   pub mqtt: Mqtt,
 }
+
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug, Clone)]
 pub struct Mqtt {
   pub client_id: Option<String>, // Default is "tagoio-relay"
   pub tls_enabled: bool,
   pub address: String,
-  pub port: u16,
+  pub port: String,
   pub subscribe: Vec<String>,          // Default is ["/tago/#", "/device/+"]
   pub username: Option<String>,        // Default is "my-username"
   pub password: Option<String>,        // Default is "my-password"
@@ -66,18 +65,7 @@ impl Mqtt {
     if self.client_id.is_none() {
       self.client_id = Some("tagoio-relay".to_string());
     }
-    if self.address != "localhost" && !self.is_valid_address(&self.address) {
-      return Err(anyhow::anyhow!("Invalid MQTT address: {}", self.address));
-    }
     Ok(self)
-  }
-
-  fn is_valid_address(&self, address: &str) -> bool {
-    let re = Regex::new(
-      r"^(?:(?:ws|wss|mqtt|mqtts)://)?(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)$",
-    )
-    .unwrap();
-    re.is_match(address)
   }
 }
 
@@ -106,7 +94,7 @@ mod tests {
         client_id: None,
         tls_enabled: false,
         address: "localhost".to_string(),
-        port: 1883,
+        port: "1883".to_string(),
         subscribe: vec![],
         username: None,
         password: None,
@@ -141,7 +129,7 @@ mod tests {
         client_id: None,
         tls_enabled: false,
         address: "localhost".to_string(),
-        port: 1883,
+        port: "1883".to_string(),
         subscribe: vec![],
         username: None,
         password: None,
@@ -164,7 +152,7 @@ mod tests {
       client_id: None,
       tls_enabled: false,
       address: "localhost".to_string(),
-      port: 1883,
+      port: "1883".to_string(),
       subscribe: vec!["/tago/#".to_string(), "/device/+".to_string()],
       username: None,
       password: None,
@@ -176,24 +164,6 @@ mod tests {
     let mqtt_with_defaults = mqtt.with_defaults().unwrap();
 
     assert_eq!(mqtt_with_defaults.client_id.unwrap(), "tagoio-relay");
-  }
-
-  #[test]
-  #[should_panic(expected = "Invalid MQTT address: invalid_address")]
-  fn test_invalid_mqtt_address() {
-    let mqtt = Mqtt {
-      client_id: None,
-      tls_enabled: false,
-      address: "invalid_address".to_string(),
-      port: 1883,
-      subscribe: vec![],
-      username: None,
-      password: None,
-      broker_tls_ca: None,
-      broker_tls_cert: None,
-      broker_tls_key: None,
-    };
-    mqtt.with_defaults().unwrap();
   }
 
   // #[test]
