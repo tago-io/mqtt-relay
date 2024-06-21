@@ -57,13 +57,18 @@ jobs:
       # - name: Run Tests
       #   run: cross test --verbose --target ${{ matrix.config.target }}
 
+      - name: Move and rename binary
+        run: |
+          mkdir -p build
+          cp target/${{ matrix.config.target }}/release/tagoio-relay build/${{ env.FILENAME }}
+
       # Upload artifacts if this is not a release
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FILENAME }}
           retention-days: 1
-          path: target/${{ matrix.config.target }}/release/tagoio-relay
+          path: build/${{ env.FILENAME }}
 
   push-to-dockerhub:
     needs: build
@@ -84,6 +89,7 @@ jobs:
         with:
           path: build
           pattern: debian-*
+          merge-multiple: true
 
       - name: List files
         run: ls -la build

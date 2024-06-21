@@ -64,7 +64,7 @@ fi
 
 # Display the tags
 echo "Tags to be used: $TAGS"
-# Debian
+
 cd build
 docker buildx build --push --build-arg TAGORELAY_VERSION=${FULL_VERSION} \
   --file Dockerfile.${DISTRIBUTION} \
