@@ -44,12 +44,12 @@ jobs:
         run: touch .env
 
       - name: Install cross (Linux ARM64 only)
-        if: matrix.config.platform == 'linux-arm64'
+        if: matrix.config.platform == 'linux-arm64-v8'
         run: cargo install cross
 
       - name: Build Binary
         run: |
-          if [ "${{ matrix.config.platform }}" == "linux-arm64" ]; then
+          if [ "${{ matrix.config.platform }}" == "linux-arm64-v8" ]; then
             cross build --locked --release --target ${{ matrix.config.target }}
           else
             cargo build --locked --release --target ${{ matrix.config.target }}
