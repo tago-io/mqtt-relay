@@ -1,0 +1,42 @@
+services:
+  tagoio-mqtt-relay:
+    image: tagoio/relay:latest
+    restart: always
+    depends_on:
+      - mosquitto-broker
+    ports:
+      # Port for the TCP server
+      - "3001:3001"
+
+    volumes:
+      - .tagoio-mqtt-relay.toml:/root/.config/.tagoio-mqtt-relay.toml
+
+    # Example using the environment variables for easy setup. You can use the .tagoio-mqtt-relay.toml above instead if you prefer.
+    environment:
+      # TagoIO Related Settings
+      - TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
+      - TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
+
+      # Mosquitto Broker Settings for the Relay to connect to
+      - TAGOIO__RELAY__MQTT__ADDRESS=mosquitto-broker
+      - TAGOIO__RELAY__MQTT__TLS_ENABLED=false
+      - TAGOIO__RELAY__MQTT__CLIENT_ID=tagoio-relay
+      - TAGOIO__RELAY__MQTT__USERNAME=my-username
+      - TAGOIO__RELAY__MQTT__PASSWORD=my-password
+      - TAGOIO__RELAY__MQTT__SUBSCRIBE__1="/tago/#"
+
+      # - TAGOIO__RELAY__MQTT__PORT=1883
+      # - TAGOIO__RELAY__MQTT__BROKER_TLS_CA=""
+      # - TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
+      # - TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
+
+  mosquitto-broker:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8883:8883" # Port for TLS
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:rw
+      - ./mosquitto/data:/mosquitto/data:rw
+      - ./mosquitto/log:/mosquitto/log:rw
