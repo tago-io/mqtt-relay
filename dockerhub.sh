@@ -55,8 +55,8 @@ if [ "$DISTRIBUTION" == "debian" ]; then
     --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-bookworm"
 elif [ "$DISTRIBUTION" == "alpine" ]; then
   TAGS="--tag tagoio/relay:${DISTRIBUTION} \
-    --tag tagoio/relay:${MAJOR}.${MINOR}-alpine \
-    --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-alpine"
+    --tag tagoio/relay:${MAJOR}.${MINOR}-${DISTRIBUTION} \
+    --tag tagoio/relay:${MAJOR}.${MINOR}.${PATCH}-${DISTRIBUTION}"
 else
   echo "Error: Unknown distribution."
   exit 1

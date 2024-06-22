@@ -8,8 +8,9 @@ services:
       # Port for the TCP server
       - "3001:3001"
 
-    volumes:
-      - .tagoio-mqtt-relay.toml:/root/.config/.tagoio-mqtt-relay.toml
+    # Set the path to the .tagoio-mqtt-relay.toml file to configure the relay
+    # volumes:
+    # - .tagoio-mqtt-relay.toml:/root/.config/.tagoio-mqtt-relay.toml
 
     # Example using the environment variables for easy setup. You can use the .tagoio-mqtt-relay.toml above instead if you prefer.
     environment:
