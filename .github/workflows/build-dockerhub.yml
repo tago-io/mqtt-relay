@@ -45,7 +45,7 @@ jobs:
 
       - name: Install cross (Linux ARM64 only)
         if: matrix.config.target != 'x86_64-unknown-linux-gnu'
-        run: cargo install cross --git https://github.com/cross-rs/cross
+        run: cargo install cross
 
       - name: Build Binary
         if: matrix.config.target != 'x86_64-unknown-linux-gnu'
