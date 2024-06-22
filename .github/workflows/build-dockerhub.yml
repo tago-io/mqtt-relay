@@ -43,15 +43,15 @@ jobs:
       - name: Create empty .env file
         run: touch .env
 
-      - name: Install cross (Linux ARM64 only)
+      - name: Install cross (Linux ARM64 and musl only)
         if: matrix.config.target != 'x86_64-unknown-linux-gnu'
         run: cargo install cross
 
-      - name: Build Binary
+      - name: Build Binary (Cross)
         if: matrix.config.target != 'x86_64-unknown-linux-gnu'
         run: cross build --locked --release --target ${{ matrix.config.target }}
 
-      - name: Build Binary (Linux x86_64)
+      - name: Build Binary (Cargo)
         if: matrix.config.target == 'x86_64-unknown-linux-gnu'
         run: cargo build --locked --release --target ${{ matrix.config.target }}
 
@@ -89,7 +89,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: build
-          pattern: debian-*
+          pattern: ${{ matrix.dist }}-*
           merge-multiple: true
 
       - name: List files
