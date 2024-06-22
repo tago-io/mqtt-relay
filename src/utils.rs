@@ -87,8 +87,6 @@ pub fn fetch_config_file(user_path: Option<String>) -> Option<ConfigFile> {
     std::process::exit(1);
   });
 
-  println!("{:?}", config.relay);
-
   config.relay
 }
 
