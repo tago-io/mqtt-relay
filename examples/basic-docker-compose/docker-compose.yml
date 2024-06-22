@@ -19,7 +19,7 @@ services:
     #   - TAGOIO__RELAY__MQTT__TLS_ENABLED="false"
     #   - TAGOIO__RELAY__MQTT__ADDRESS="localhost"
     #   - TAGOIO__RELAY__MQTT__PORT="1883"
-    #   - TAGOIO__RELAY__MQTT__SUBSCRIBE__1="/device/#"
+    #  - TAGOIO__RELAY__MQTT__SUBSCRIBE=["/device/#"]
     #   - TAGOIO__RELAY__MQTT__USERNAME="my-username"
     #   - TAGOIO__RELAY__MQTT__PASSWORD="my-password"
     #   - TAGOIO__RELAY__MQTT__BROKER_TLS_CA=""

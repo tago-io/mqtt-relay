@@ -96,12 +96,7 @@ pub async fn start_relay() -> Result<()> {
 
   let api_port = {
     let config_file = CONFIG_FILE.read().unwrap();
-    config_file
-      .as_ref()
-      .unwrap()
-      .downlink_port
-      .clone()
-      .unwrap_or("3000".to_string())
+    config_file.as_ref().unwrap().downlink_port.unwrap_or(3000)
   };
 
   let test = create_ssl_acceptor().unwrap();
@@ -115,10 +110,7 @@ pub async fn start_relay() -> Result<()> {
   //   }
   // };
 
-  let addr = SocketAddr::from((
-    HOST_ADDRESS.parse::<std::net::IpAddr>().unwrap(),
-    api_port.parse::<u16>().unwrap(),
-  ));
+  let addr = SocketAddr::from((HOST_ADDRESS.parse::<std::net::IpAddr>().unwrap(), api_port));
 
   tokio::spawn(async move {
     log::info!(target: "info", "Starting Publish API on: {}", addr);

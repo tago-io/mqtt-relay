@@ -76,15 +76,7 @@ fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
   let crt_file = &relay_cfg.config.mqtt.broker_tls_cert;
   let key_file = &relay_cfg.config.mqtt.broker_tls_key;
 
-  let port: u16 = match relay_cfg.config.mqtt.port.parse() {
-    Ok(port) => port,
-    Err(e) => {
-      log::error!(target: "mqtt", "Invalid Broker Port number: {}. Error: {:?}", relay_cfg.config.mqtt.port, e);
-      std::process::exit(1);
-    }
-  };
-
-  let mut mqttoptions = MqttOptions::new(client_id, &relay_cfg.config.mqtt.address, port);
+  let mut mqttoptions = MqttOptions::new(client_id, &relay_cfg.config.mqtt.address, relay_cfg.config.mqtt.port);
   mqttoptions.set_keep_alive(Duration::from_secs(30));
   mqttoptions.set_max_packet_size(1024 * 1024, 1024 * 1024); // 1mb in/out
 

@@ -183,8 +183,7 @@ export TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
 
 # Subscribe to multiple topics
-export TAGOIO__RELAY__MQTT__SUBSCRIBE__1="/tago/#" 
-export TAGOIO__RELAY__MQTT__SUBSCRIBE__2="/topic/+"
+export TAGOIO__RELAY__MQTT__SUBSCRIBE=["/tago/#"] 
 
 # Change the path to the configuration file
 export TAGOIO__RELAY__CONFIG_PATH="/root/.config/.tagoio-mqtt-relay.toml"

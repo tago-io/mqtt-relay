@@ -1,6 +1,9 @@
+use figment::{
+  providers::{Env, Format, Toml},
+  Figment,
+};
 use home::home_dir;
 use std::time::Duration;
-use toml_env::{initialize, Args, AutoMapEnvArgs};
 
 use crate::schema::ConfigFile;
 
@@ -75,27 +78,18 @@ pub fn fetch_config_file(user_path: Option<String>) -> Option<ConfigFile> {
     std::process::exit(1);
   }
 
-  let config: Option<ConfigFileResponse> = initialize(Args {
-    auto_map_env: Some(AutoMapEnvArgs {
-      divider: "__",
-      prefix: Some("TAGOIO"), // Prefix for environment variables
-      transform: Box::new(|name| name.to_lowercase()),
-    }),
-    // logging: Logging::StdOut,
-    config_path: Some(&config_path),
-    ..Args::default()
-  })
-  .unwrap_or_else(|err| {
+  let figment = Figment::new()
+    .merge(Toml::file(&config_path))
+    .merge(Env::prefixed("TAGOIO__").split("__"));
+
+  let config: ConfigFileResponse = figment.extract().unwrap_or_else(|err| {
     log::error!(target: "error", "Failed to initialize configuration: {}", err);
     std::process::exit(1);
   });
 
-  config
-    .unwrap_or_else(|| {
-      log::error!(target: "error", "Configuration file is missing or invalid.");
-      std::process::exit(1);
-    })
-    .relay
+  println!("{:?}", config.relay);
+
+  config.relay
 }
 
 pub fn calculate_backoff(attempt: u32) -> Duration {

@@ -10,8 +10,8 @@ pub struct RelayConfig {
 pub struct ConfigFile {
   pub network_token: String,
   pub authorization_token: String,
-  pub tagoio_url: Option<String>,    // Default is "https://api.tago.io"
-  pub downlink_port: Option<String>, // Default is "3000"
+  pub tagoio_url: Option<String>, // Default is "https://api.tago.io"
+  pub downlink_port: Option<u16>, // Default is "3000"
   pub mqtt: Mqtt,
 }
 
@@ -20,7 +20,7 @@ pub struct Mqtt {
   pub client_id: Option<String>, // Default is "tagoio-relay"
   pub tls_enabled: bool,
   pub address: String,
-  pub port: String,
+  pub port: u16,
   pub subscribe: Vec<String>,          // Default is ["/tago/#", "/device/+"]
   pub username: Option<String>,        // Default is "my-username"
   pub password: Option<String>,        // Default is "my-password"
@@ -53,7 +53,7 @@ impl ConfigFile {
       self.tagoio_url = Some("https://api.tago.io".to_string());
     }
     if self.downlink_port.is_none() {
-      self.downlink_port = Some("3000".to_string());
+      self.downlink_port = Option::from(3000);
     }
     self.mqtt = self.mqtt.with_defaults()?;
     Ok(self)
@@ -94,7 +94,7 @@ mod tests {
         client_id: None,
         tls_enabled: false,
         address: "localhost".to_string(),
-        port: "1883".to_string(),
+        port: 1883,
         subscribe: vec![],
         username: None,
         password: None,
@@ -110,7 +110,7 @@ mod tests {
     assert_eq!(relay_config.profile_id.unwrap(), "self-hosted");
     // assert_eq!(relay_config.state.unwrap(), InitiatedState::Stopped);
     assert_eq!(relay_config.config.tagoio_url.unwrap(), "https://api.tago.io");
-    assert_eq!(relay_config.config.downlink_port.unwrap(), "3000");
+    assert_eq!(relay_config.config.downlink_port.unwrap(), 3000);
     assert_eq!(relay_config.config.mqtt.client_id.unwrap(), "tagoio-relay");
     // assert_eq!(
     //   relay_config.config.mqtt.authentication_certificate_file.unwrap(),
@@ -129,7 +129,7 @@ mod tests {
         client_id: None,
         tls_enabled: false,
         address: "localhost".to_string(),
-        port: "1883".to_string(),
+        port: 1883,
         subscribe: vec![],
         username: None,
         password: None,
@@ -142,7 +142,7 @@ mod tests {
     let config_with_defaults = config.with_defaults().unwrap();
 
     assert_eq!(config_with_defaults.tagoio_url.unwrap(), "https://api.tago.io");
-    assert_eq!(config_with_defaults.downlink_port.unwrap(), "3000");
+    assert_eq!(config_with_defaults.downlink_port.unwrap(), 3000);
     assert_eq!(config_with_defaults.mqtt.client_id.unwrap(), "tagoio-relay");
   }
 
@@ -152,7 +152,7 @@ mod tests {
       client_id: None,
       tls_enabled: false,
       address: "localhost".to_string(),
-      port: "1883".to_string(),
+      port: 1883,
       subscribe: vec!["/tago/#".to_string(), "/device/+".to_string()],
       username: None,
       password: None,

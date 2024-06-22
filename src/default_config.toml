@@ -2,13 +2,13 @@
 network_token="Your-Network-Token" # Generate a Network Token under your TagoIO Network Settings
 authorization_token="Your-Authorization-Token" # Generate an Authorization Token under your TagoIO > Devices > Authorizations
 tagoio_url="https://api.tago.io" # Default
-downlink_port="3001" # Default is 3000
+downlink_port=3001 # Default is 3000
 
 [relay.mqtt]
 client_id="tagoio-relay" # Default is tagoio-relay
 tls_enabled=false
 address="localhost"
-port="1883"
+port=1883
 subscribe=["/tago/#", "/tago/+"] # MQTT topics to subscribe to
 username="my-username"
 password="my-passowrd"
