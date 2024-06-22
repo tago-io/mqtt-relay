@@ -44,16 +44,11 @@ jobs:
         run: touch .env
 
       - name: Install cross (Linux ARM64 only)
-        if: matrix.config.platform == 'linux-arm64-v8'
-        run: cargo install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Build Binary
-        run: |
-          if [ "${{ matrix.config.platform }}" == "linux-arm64-v8" ]; then
-            cross build --locked --release --target ${{ matrix.config.target }}
-          else
-            cargo build --locked --release --target ${{ matrix.config.target }}
-          fi
+        run: cross build --locked --release --target ${{ matrix.config.target }}
+
       # - name: Run Tests
       #   run: cross test --verbose --target ${{ matrix.config.target }}
 
