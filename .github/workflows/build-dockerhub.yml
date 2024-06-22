@@ -44,10 +44,16 @@ jobs:
         run: touch .env
 
       - name: Install cross (Linux ARM64 only)
+        if: matrix.config.platform != 'x86_64-unknown-linux-gnu'
         run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Build Binary
+        if: matrix.config.platform != 'x86_64-unknown-linux-gnu'
         run: cross build --locked --release --target ${{ matrix.config.target }}
+
+      - name: Build Binary (Linux x86_64)
+        if: matrix.config.platform == 'x86_64-unknown-linux-gnu'
+        run: cargo build --locked --release --target ${{ matrix.config.target }}
 
       # - name: Run Tests
       #   run: cross test --verbose --target ${{ matrix.config.target }}
