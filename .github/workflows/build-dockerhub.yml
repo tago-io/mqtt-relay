@@ -17,9 +17,9 @@ jobs:
       matrix:
         config:
           - { platform: linux-amd64, dist: "debian", target: x86_64-unknown-linux-gnu }
-          - { platform: linux-arm64-v8, dist: "debian", target: aarch64-unknown-linux-gnu }
+          - { platform: linux-arm64, dist: "debian", target: aarch64-unknown-linux-gnu }
           - { platform: linux-amd64, dist: "alpine", target: x86_64-unknown-linux-musl }
-          - { platform: linux-arm64-v8, dist: "alpine", target: aarch64-unknown-linux-musl }
+          - { platform: linux-arm64, dist: "alpine", target: aarch64-unknown-linux-musl }
     environment: PROD
     env:
       CARGO_SERVER_SSL_CA: ${{ secrets.SERVER_SSL_CA }}

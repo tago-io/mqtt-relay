@@ -15,9 +15,9 @@ COPY /alpine-* .
 
 # Rename the correct executable based on the platform
 RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then \
-        mv alpine-linux-amd64 tagoio-relay; \
+        mv ./alpine-linux-amd64 tagoio-relay; \
     elif [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
-        mv alpine-linux-arm64 tagoio-relay; \
+        mv ./alpine-linux-arm64 tagoio-relay; \
     else \
         echo "Unsupported platform: ${TARGETPLATFORM}"; \
         exit 1; \

@@ -16,7 +16,7 @@ COPY /debian-* .
 RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then \
         mv ./debian-linux-amd64 tagoio-relay; \
     elif [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
-        mv ./debian-linux-arm64-v8 tagoio-relay; \
+        mv ./debian-linux-arm64 tagoio-relay; \
     else \
         echo "Unsupported platform: ${TARGETPLATFORM}"; \
         exit 1; \
