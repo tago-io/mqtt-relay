@@ -185,7 +185,7 @@ export TAGOIO__RELAY__MQTT__BROKER_TLS_CERT=""
 export TAGOIO__RELAY__MQTT__BROKER_TLS_KEY=""
 
 # Subscribe to multiple topics
-export TAGOIO__RELAY__MQTT__SUBSCRIBE=["/tago/#"] 
+export TAGOIO__RELAY__MQTT__SUBSCRIBE=["/device/#"] 
 
 # Change the path to the configuration file
 export TAGOIO__RELAY__CONFIG_PATH="/root/.config/.tagoio-mqtt-relay.toml"
@@ -208,12 +208,12 @@ Repl
 
   **Using Ngrok:**
   ```bash
-  ngrok tcp 3001
+  ngrok http https://localhost:3000
   ```
 
   **Using Tailscale:**
   ```bash
-  tailscale funnel 3001
+  tailscale funnel 3000
   ```
 4. **Network Middleware Endpoint:**
    To enable the Middleware Endpoint, you need to set the field `Middleware Endpoint` in your Network at TagoIO to the generated URL (e.g., https://abcd1234.ngrok.io) as your Middleware Endpoint in TagoIO.
