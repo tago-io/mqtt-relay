@@ -66,6 +66,10 @@ enum Commands {
     /// Path to the configuration file
     #[arg(short, long)]
     config_path: Option<String>,
+
+    /// Unsafe mode: disable SSL verification
+    #[arg(long)]
+    unsafe_mode: bool,
   },
 }
 
@@ -97,6 +101,7 @@ async fn main() {
     Commands::Start {
       verbose: _,
       config_path,
+      unsafe_mode,
     } => {
       let config = utils::fetch_config_file(config_path.clone());
       if let Some(config) = config {
@@ -106,7 +111,7 @@ async fn main() {
         std::process::exit(1);
       }
 
-      if let Err(e) = relay::start_relay().await {
+      if let Err(e) = relay::start_relay(*unsafe_mode).await {
         log::error!("Error starting relay: {}", e);
       }
     }
