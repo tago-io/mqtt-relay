@@ -204,7 +204,11 @@ The Relay comes with pre-set TLS certificates configured during build time, so y
   The default port for the Middleware Endpoint is 3001, but you can change this by setting the downlink_port in your (configuration file)[#configuration-file-and-environment-variables].
 Repl
 3. **Local Testing**:
-  For local testing, you can use tools like ngrok or tailscale to expose your local server to the internet securely.
+  For local testing, you can use tools like ngrok or tailscale to expose your local server to the internet securely. Ensure to run the relay with the `--unsafe-mode` flag.
+
+  ```sh
+  tagoio-relay start --unsafe-mode
+  ```
 
   **Using Ngrok:**
   ```bash
