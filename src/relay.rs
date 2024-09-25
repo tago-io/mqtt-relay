@@ -40,7 +40,7 @@ const HOST_ADDRESS: &str = "127.0.0.1";
 #[cfg(not(debug_assertions))]
 const HOST_ADDRESS: &str = "::"; // ? External IPv4/IPv6 support
 
-fn create_ssl_acceptor() -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack> {
+fn create_ssl_acceptor(unsafe_mode: bool) -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack> {
   // Certificates contents are stored in the environment variables
   let cert = dotenv!("CARGO_SERVER_SSL_CERT").as_bytes();
   let key = dotenv!("CARGO_SERVER_SSL_KEY").as_bytes();
@@ -53,28 +53,32 @@ fn create_ssl_acceptor() -> Result<Arc<SslAcceptor>, openssl::error::ErrorStack>
   let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
   acceptor.set_private_key(&key)?;
   acceptor.set_certificate(&cert)?;
-  // acceptor.add_client_ca(&ca)?;
   acceptor.check_private_key()?;
 
-  // Create a new X509Store and add the CA certificate to it
-  let mut store_builder = X509StoreBuilder::new()?;
-  store_builder.add_cert(ca.clone())?;
-  let store = store_builder.build();
+  if !unsafe_mode {
+    // Create a new X509Store and add the CA certificate to it
+    let mut store_builder = X509StoreBuilder::new()?;
+    store_builder.add_cert(ca.clone())?;
+    let store = store_builder.build();
 
-  // Set the CA store for the acceptor
-  acceptor.set_cert_store(store);
+    // Set the CA store for the acceptor
+    acceptor.set_cert_store(store);
 
-  // Add the CA certificate as a client CA
-  acceptor.add_client_ca(&ca)?;
+    // Add the CA certificate as a client CA
+    acceptor.add_client_ca(&ca)?;
 
-  acceptor.set_verify(SslVerifyMode::PEER | SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+    acceptor.set_verify(SslVerifyMode::PEER | SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+  } else {
+    log::warn!(target: "security", "Running in unsafe mode: SSL Certificates verification disabled");
+    acceptor.set_verify(SslVerifyMode::NONE);
+  }
   Ok(Arc::new(acceptor.build()))
 }
 
 /**
  * Start the MQTT Relay service
  */
-pub async fn start_relay() -> Result<()> {
+pub async fn start_relay(unsafe_mode: bool) -> Result<()> {
   // Simulate fetching relay configurations
   let relay_list = get_relay_list().await?;
   let relay_list = Arc::new(RwLock::new(relay_list));
@@ -99,7 +103,7 @@ pub async fn start_relay() -> Result<()> {
     config_file.as_ref().unwrap().downlink_port.unwrap_or(3000)
   };
 
-  let test = create_ssl_acceptor().unwrap();
+  let test = create_ssl_acceptor(unsafe_mode).unwrap();
   let acceptor = OpenSSLConfig::from_acceptor(test);
 
   // let listener = match tokio::net::TcpListener::bind(format!("{}:{}", HOST_ADDRESS, api_port)).await {
