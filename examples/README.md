@@ -6,6 +6,7 @@ This directory contains example configurations for setting up the TagoIO MQTT Re
 
 - [Docker Compose Example](#docker-compose-example)
 - [Mosquitto Docker Compose Example](#mosquitto-docker-compose-example)
+- [Mosquitto Docker Compose Example with Auth Plugin](#mosquitto-docker-compose-example-with-auth-plugin)
 
 ## Docker Compose Example
 
@@ -44,3 +45,11 @@ This example demonstrates how to set up the TagoIO MQTT Relay with an Eclipse Mo
    ```sh
    docker-compose up -d
    ```
+
+## Mosquitto Docker Compose Example with Auth Plugin
+
+This example demonstrates how to set up the TagoIO MQTT Relay with an Eclipse Mosquitto broker using Docker Compose and the mosquitto-go-auth plugin. The plugin enables client authentication using TagoIO device tokens, providing secure access control by validating client credentials against TagoIO's authentication service.
+
+### Configuration
+- **File**: `docker-compose.yml`
+
