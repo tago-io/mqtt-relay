@@ -194,7 +194,7 @@ pub async fn verify_device_token(relay_cfg: &RelayConfig, device_token: &str) ->
   let endpoint = format!("{}/info", endpoint);
 
   let mut headers = HeaderMap::new();
-  headers.insert("Authorization", HeaderValue::from_str(&device_token).unwrap());
+  headers.insert("Authorization", HeaderValue::from_str(device_token).unwrap());
 
   let resp = make_request(reqwest::Method::GET, &endpoint, headers, None).await?;
 

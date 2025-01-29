@@ -27,7 +27,7 @@ pub async fn handle_auth(
 
   // Try to authenticate against any relay in the list
   for relay in relays.iter() {
-    if let Ok(_) = verify_device_token(relay, &payload.password).await {
+    if (verify_device_token(relay, &payload.password).await).is_ok() {
       return (axum::http::StatusCode::OK, Json(AuthResponse { ok: true }));
     }
   }
