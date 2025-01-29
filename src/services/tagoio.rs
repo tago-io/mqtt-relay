@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Error;
 use axum::http::{HeaderMap, HeaderValue};
+use hex;
 use reqwest::StatusCode;
 use rumqttc::{Publish, QoS};
 use serde_json;
@@ -107,7 +108,17 @@ pub async fn forward_buffer_messages(
   let mut headers = HeaderMap::new();
   headers.insert("AUTHORIZATION", HeaderValue::from_str(&relay_cfg.config.network_token)?);
 
-  let payload_str = String::from_utf8_lossy(&event.payload).into_owned();
+  let payload_value = match String::from_utf8(event.payload.to_vec()) {
+    Ok(utf8_str) => {
+      // Convert to uppercase hex
+      serde_json::Value::String(utf8_str)
+    }
+    Err(_) => {
+      // Not valid UTF-8, convert to hex
+      serde_json::Value::String(hex::encode_upper(&event.payload))
+    }
+  };
+
   let qos_number = match event.qos {
     QoS::AtMostOnce => 0,
     QoS::AtLeastOnce => 1,
@@ -116,7 +127,7 @@ pub async fn forward_buffer_messages(
 
   let body = serde_json::json!([{
       "variable": "payload",
-      "value": payload_str,
+      "value": payload_value,
       "metadata": {
           "topic": event.topic.clone(),
           "qos": qos_number,
