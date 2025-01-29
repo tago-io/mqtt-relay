@@ -1,7 +1,8 @@
 use crate::{
   services::{
+    mosquitto_auth,
     mqttrelay::{run_mqtt_relay_connection, PublishMessage},
-    tagoio::{get_relay_list, verify_network_token},
+    tagoio::get_relay_list,
   },
   CONFIG_FILE,
 };
@@ -10,7 +11,7 @@ use axum::{
   extract::rejection::JsonRejection,
   http::StatusCode,
   response::{IntoResponse, Response},
-  routing::post,
+  routing::{get, post},
   Extension, Json, Router,
 };
 
@@ -83,11 +84,13 @@ pub async fn start_relay(unsafe_mode: bool) -> Result<()> {
   let relay_list = get_relay_list().await?;
   let relay_list = Arc::new(RwLock::new(relay_list));
 
-  for relay in relay_list.read().await.iter() {
-    log::info!(target: "network", "Verifying network token for relay: {}", relay.id);
-    if let Err(e) = verify_network_token(relay).await {
-      log::error!(target: "network", "Failed to verify network token for relay {}: {}", relay.id, e);
-      std::process::exit(1);
+  {
+    let mut relays = relay_list.write().await;
+    for relay in relays.iter_mut() {
+      if let Err(e) = Arc::make_mut(relay).verify().await {
+        log::error!(target: "network", "Failed to verify relay {}: {}", relay.id, e);
+        std::process::exit(1);
+      }
     }
   }
 
@@ -96,7 +99,12 @@ pub async fn start_relay(unsafe_mode: bool) -> Result<()> {
   // Start the HTTP server
   let app = Router::new()
     .route("/publish", post(handle_publish))
-    .layer(Extension(tasks.clone()));
+    .route("/status", get(handle_status))
+    .route("/auth", post(mosquitto_auth::handle_auth))
+    .route("/superuser", post(mosquitto_auth::handle_superuser))
+    .route("/acl", post(mosquitto_auth::handle_acl))
+    .layer(Extension(tasks.clone()))
+    .layer(Extension(relay_list.clone()));
 
   let api_port = {
     let config_file = CONFIG_FILE.read().unwrap();
@@ -105,14 +113,6 @@ pub async fn start_relay(unsafe_mode: bool) -> Result<()> {
 
   let test = create_ssl_acceptor(unsafe_mode).unwrap();
   let acceptor = OpenSSLConfig::from_acceptor(test);
-
-  // let listener = match tokio::net::TcpListener::bind(format!("{}:{}", HOST_ADDRESS, api_port)).await {
-  //   Ok(listener) => listener,
-  //   Err(e) => {
-  //     log::error!(target: "error", "Failed to bind to port {}: {}", api_port, e);
-  //     std::process::exit(1);
-  //   }
-  // };
 
   let addr = SocketAddr::from((HOST_ADDRESS.parse::<std::net::IpAddr>().unwrap(), api_port));
 
@@ -224,4 +224,11 @@ async fn handle_publish(
   } else {
     Err(JsonError(axum::http::StatusCode::NOT_FOUND))
   }
+}
+
+/**
+ * Handle status request for health check
+ */
+pub async fn handle_status() -> impl IntoResponse {
+  (StatusCode::OK, Json(json!({ "status": "ok" })))
 }

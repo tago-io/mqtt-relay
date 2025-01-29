@@ -76,31 +76,67 @@ fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
   let crt_file = &relay_cfg.config.mqtt.broker_tls_cert;
   let key_file = &relay_cfg.config.mqtt.broker_tls_key;
 
+  let ca_content = if let Some(ca_path) = ca_file {
+    std::fs::read_to_string(ca_path).unwrap_or_else(|e| {
+      log::error!(target: "mqtt", "Failed to read CA file {}: {}", ca_path, e);
+      String::new()
+    })
+  } else {
+    String::new()
+  };
+
+  let crt_content = if let Some(crt_path) = crt_file {
+    std::fs::read_to_string(crt_path).unwrap_or_else(|e| {
+      log::error!(target: "mqtt", "Failed to read certificate file {}: {}", crt_path, e);
+      String::new()
+    })
+  } else {
+    String::new()
+  };
+
+  let key_content = if let Some(key_path) = key_file {
+    std::fs::read_to_string(key_path).unwrap_or_else(|e| {
+      log::error!(target: "mqtt", "Failed to read key file {}: {}", key_path, e);
+      String::new()
+    })
+  } else {
+    String::new()
+  };
+
+  // Replace the file paths with their contents
+  let ca_file = if !ca_content.is_empty() { Some(ca_content) } else { None };
+  let crt_file = if !crt_content.is_empty() {
+    Some(crt_content)
+  } else {
+    None
+  };
+  let key_file = if !key_content.is_empty() {
+    Some(key_content)
+  } else {
+    None
+  };
+
   let mut mqttoptions = MqttOptions::new(client_id, &relay_cfg.config.mqtt.address, relay_cfg.config.mqtt.port);
   mqttoptions.set_keep_alive(Duration::from_secs(30));
   mqttoptions.set_max_packet_size(1024 * 1024, 1024 * 1024); // 1mb in/out
 
   if relay_cfg.config.mqtt.tls_enabled || relay_cfg.config.mqtt.address.starts_with("ssl") {
-    let client_auth = if let (Some(crt), Some(key)) = (crt_file, key_file) {
-      Some((crt.clone().into_bytes(), key.clone().into_bytes()))
-    } else {
-      None
-    };
-
-    if let Some(certificate) = ca_file {
+    if let (Some(ca_content), Some(crt_content), Some(key_content)) = (ca_file.clone(), crt_file, key_file) {
+      // All three files are provided - use client certificate authentication
       mqttoptions.set_transport(rumqttc::Transport::tls_with_config(TlsConfiguration::Simple {
-        ca: certificate.clone().into_bytes(),
+        ca: ca_content.into_bytes(),
         alpn: None,
-        client_auth,
+        client_auth: Some((crt_content.into_bytes(), key_content.into_bytes())),
       }));
-    } else if let Some(client_auth) = client_auth {
+    } else if let Some(ca_content) = ca_file {
+      // Only CA is provided - use server verification only
       mqttoptions.set_transport(rumqttc::Transport::tls_with_config(TlsConfiguration::Simple {
-        ca: vec![],
+        ca: ca_content.into_bytes(),
         alpn: None,
-        client_auth: Some(client_auth),
+        client_auth: None,
       }));
     } else {
-      // Use rustls-native-certs to load root certificates from the operating system.
+      // No certificates provided - use system root certificates
       let mut root_cert_store = RootCertStore::empty();
       root_cert_store
         .add_parsable_certificates(rustls_native_certs::load_native_certs().expect("could not load platform certs"));

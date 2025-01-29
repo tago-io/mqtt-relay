@@ -1,9 +1,12 @@
+use crate::services::tagoio::verify_network_token;
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct RelayConfig {
   pub id: String,
   pub config: ConfigFile,
   pub profile_id: Option<String>,
+  pub network_id: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug, Clone)]
@@ -39,12 +42,23 @@ impl RelayConfig {
       id,
       config: config.with_defaults()?,
       profile_id,
+      network_id: None,
     })
   }
 
-  // pub fn is_running(&self) -> bool {
-  //     matches!(self.state, Some(InitiatedState::Running))
-  // }
+  pub async fn verify(&mut self) -> anyhow::Result<()> {
+    log::info!(target: "network", "Verifying network token for relay: {}", self.id);
+    match verify_network_token(self).await {
+      Ok(verified_id) => {
+        self.network_id = Some(verified_id);
+        Ok(())
+      }
+      Err(e) => {
+        log::error!(target: "network", "Failed to verify network token for relay {}: {}", self.id, e);
+        Err(e.into())
+      }
+    }
+  }
 }
 
 impl ConfigFile {
