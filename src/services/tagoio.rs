@@ -310,7 +310,7 @@ mod tests {
       .mock("GET", "/info")
       .match_header("AUTHORIZATION", "test_network_token")
       .with_status(200)
-      .with_body("Valid Token") // Ensure the response body is not empty
+      .with_body(r#"{"result": {"id": "test_network_id"}}"#)
       .create_async()
       .await;
 
