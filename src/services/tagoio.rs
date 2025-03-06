@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Error;
 use axum::http::{HeaderMap, HeaderValue};
+use hex;
 use reqwest::StatusCode;
 use rumqttc::{Publish, QoS};
 use serde_json;
@@ -11,7 +12,7 @@ use crate::{schema::RelayConfig, CONFIG_FILE};
 
 /**
  * Get the list of relay configurations
- * To be improved later to support multiple relays
+ * TODO: To be improved later to support multiple relays
  */
 pub async fn get_relay_list() -> Result<Vec<Arc<RelayConfig>>, Error> {
   let config_file = CONFIG_FILE.read().unwrap();
@@ -107,7 +108,17 @@ pub async fn forward_buffer_messages(
   let mut headers = HeaderMap::new();
   headers.insert("AUTHORIZATION", HeaderValue::from_str(&relay_cfg.config.network_token)?);
 
-  let payload_str = String::from_utf8(event.payload.to_vec())?;
+  let payload_value = match String::from_utf8(event.payload.to_vec()) {
+    Ok(utf8_str) => {
+      // Convert to uppercase hex
+      serde_json::Value::String(utf8_str)
+    }
+    Err(_) => {
+      // Not valid UTF-8, convert to hex
+      serde_json::Value::String(hex::encode_upper(&event.payload))
+    }
+  };
+
   let qos_number = match event.qos {
     QoS::AtMostOnce => 0,
     QoS::AtLeastOnce => 1,
@@ -116,7 +127,7 @@ pub async fn forward_buffer_messages(
 
   let body = serde_json::json!([{
       "variable": "payload",
-      "value": payload_str,
+      "value": payload_value,
       "metadata": {
           "topic": event.topic.clone(),
           "qos": qos_number,
@@ -126,7 +137,6 @@ pub async fn forward_buffer_messages(
   match make_request(reqwest::Method::POST, &endpoint, headers, Some(body)).await {
     Ok(response) => response,
     Err(e) => {
-      log::error!(target: "error", "Failed to forward buffered messages to TagoIO: {:?}", e);
       return Err(Box::new(e));
     }
   };
@@ -137,7 +147,7 @@ pub async fn forward_buffer_messages(
 /**
  * Verify that the network token is valid
  */
-pub async fn verify_network_token(relay_cfg: &RelayConfig) -> Result<(), CustomError> {
+pub async fn verify_network_token(relay_cfg: &RelayConfig) -> Result<String, CustomError> {
   let endpoint = relay_cfg
     .config
     .tagoio_url
@@ -163,8 +173,75 @@ pub async fn verify_network_token(relay_cfg: &RelayConfig) -> Result<(), CustomE
     });
   }
 
+  // Parse the response JSON and extract the ID
+  let response: serde_json::Value = serde_json::from_str(&resp).map_err(|e| CustomError {
+    status: StatusCode::INTERNAL_SERVER_ERROR,
+    body: resp.clone(),
+    message: format!("Failed to parse response JSON: {}", e),
+  })?;
+
+  let id = response["result"]["id"]
+    .as_str()
+    .ok_or_else(|| CustomError {
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+      body: resp,
+      message: "Response JSON missing 'id' field".to_string(),
+    })?
+    .to_string();
+
+  Ok(id)
+}
+
+/**
+ * Verify that the device token is valid. Mainly used for mosquitto auth plugin
+ */
+pub async fn verify_device_token(relay_cfg: &RelayConfig, device_token: &str) -> Result<(), CustomError> {
+  let endpoint = relay_cfg
+    .config
+    .tagoio_url
+    .clone()
+    .unwrap_or_else(|| "https://api.tago.io".to_string());
+
+  let endpoint = format!("{}/info", endpoint);
+
+  let mut headers = HeaderMap::new();
+  headers.insert("Authorization", HeaderValue::from_str(device_token).unwrap());
+
+  let resp = make_request(reqwest::Method::GET, &endpoint, headers, None).await?;
+
+  if resp.is_empty() {
+    log::error!(target: "error", "Invalid Device Token: Check your device token and TagoIO API URL and try again");
+    return Err(CustomError {
+      status: StatusCode::UNAUTHORIZED,
+      body: String::new(),
+      message: "Invalid Device Token".to_string(),
+    });
+  }
+
+  let response: serde_json::Value = serde_json::from_str(&resp).map_err(|e| CustomError {
+    status: StatusCode::INTERNAL_SERVER_ERROR,
+    body: resp.clone(),
+    message: format!("Failed to parse response JSON: {}", e),
+  })?;
+
+  let network_id = response["result"]["network"].as_str().ok_or_else(|| CustomError {
+    status: StatusCode::INTERNAL_SERVER_ERROR,
+    body: resp,
+    message: "Response JSON missing 'network' field".to_string(),
+  })?;
+
+  if network_id != relay_cfg.network_id.as_ref().unwrap() {
+    log::error!(target: "error", "Invalid Device Token: Check your device token and TagoIO API URL and try again");
+    return Err(CustomError {
+      status: StatusCode::UNAUTHORIZED,
+      body: String::new(),
+      message: "Invalid Device Token".to_string(),
+    });
+  }
+
   Ok(())
 }
+
 /**
  * Unit Test Section
  */
@@ -198,6 +275,7 @@ mod tests {
         },
       },
       profile_id: None,
+      network_id: None,
     }
   }
 
@@ -243,7 +321,7 @@ mod tests {
       .mock("GET", "/info")
       .match_header("AUTHORIZATION", "test_network_token")
       .with_status(200)
-      .with_body("Valid Token") // Ensure the response body is not empty
+      .with_body(r#"{"result": {"id": "test_network_id"}}"#)
       .create_async()
       .await;
 

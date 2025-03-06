@@ -27,3 +27,4 @@ serde_json = "1.0.117"
 tokio = {version = "1.37.0", features = ["full", "rt-multi-thread"]}
 tokio-rustls = "0.26.0"
 figment = { version = "0.10", features = ["toml", "env"] }
+hex = "0.4.3"
