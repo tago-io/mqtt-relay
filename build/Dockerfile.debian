@@ -1,5 +1,5 @@
 # Install runtime dependencies
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 ARG TAGOIO_SOURCE_FOLDER="/tago-io"
 ARG TARGETPLATFORM
 
