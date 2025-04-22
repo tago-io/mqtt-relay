@@ -212,12 +212,12 @@ Repl
 
   **Using Ngrok:**
   ```bash
-  ngrok http https://localhost:3000
+  ngrok http https://localhost:3001
   ```
 
   **Using Tailscale:**
   ```bash
-  tailscale funnel 3000
+  tailscale funnel 3001
   ```
 4. **Network Middleware Endpoint:**
    To enable the Middleware Endpoint, you need to set the field `Middleware Endpoint` in your Network at TagoIO to the generated URL (e.g., https://abcd1234.ngrok.io) as your Middleware Endpoint in TagoIO.
