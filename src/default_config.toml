@@ -1,7 +1,14 @@
 [relay]
 network_token="Your-Network-Token" # Generate a Network Token under your TagoIO Network Settings
 authorization_token="Your-Authorization-Token" # Generate an Authorization Token under your TagoIO > Devices > Authorizations
+
+# TagoIO API URL - Use the appropriate regional endpoint:
+# United States East 1: https://api.us-e1.tago.io/
+# Europe West 1: https://api.eu-w1.tago.io/
+# Default (US): https://api.tago.io
 tagoio_url="https://api.tago.io" # Default
+
+# The Relay will listen on this port for incoming messages from TagoIO
 downlink_port=3001
 
 [relay.mqtt]
@@ -12,6 +19,8 @@ port=1883
 subscribe=["/tago/+"] # MQTT topics to subscribe to
 username="my-username"
 password="my-passowrd"
+
+# TLS Certificates for the MQTT Broker (optional)
 # broker_tls_ca="" # The CA certificate. Alternative to username and password
 # broker_tls_cert="" # The client certificate. 
 # broker_tls_key="" # The client key. 
