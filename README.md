@@ -145,9 +145,15 @@ Here is a reference:
 [relay]
 network_token="Your-Network-Token"
 authorization_token="Your-Authorization-Token"
+
+# TagoIO API URL - Use the appropriate endpoint:
+# United States East 1: https://api.us-e1.tago.io/
+# Europe West 1: https://api.eu-w1.tago.io/
+# Default (US): https://api.tago.io
+# TagoIO Deploy (dedicated single-tenant instance): e.g -> https://api.xxxxx.tagoio.net
 tagoio_url="https://api.tago.io"
 
-# The Relay will listen on this port for incoming messages from TagoIO 
+# The Relay will listen on this port for incoming messages from TagoIO
 downlink_port="3001"
 
 [relay.mqtt]
@@ -170,7 +176,14 @@ The environment variables can be set directly in the shell, and they will overri
 ```sh
 export TAGOIO__RELAY__NETWORK_TOKEN="Your-Network-Token"
 export TAGOIO__RELAY__AUTHORIZATION_TOKEN="Your-Authorization-Token"
+
+# TagoIO API URL - Use the appropriate endpoint:
+# United States East 1: https://api.us-e1.tago.io/
+# Europe West 1: https://api.eu-w1.tago.io/
+# Default (US): https://api.tago.io
+# TagoIO Deploy (dedicated single-tenant instance): e.g -> https://api.xxxxx.tagoio.net
 export TAGOIO__RELAY__TAGOIO_URL="https://api.tago.io"
+
 export TAGOIO__RELAY__DOWNLINK_PORT="3001"
 
 # MQTT Client Settings
