@@ -3,12 +3,21 @@ use std::sync::Arc;
 use anyhow::Error;
 use axum::http::{HeaderMap, HeaderValue};
 use hex;
+use once_cell::sync::Lazy;
 use reqwest::StatusCode;
 use rumqttc::{Publish, QoS};
 use serde_json;
 use std::fmt;
 
 use crate::{schema::RelayConfig, CONFIG_FILE};
+
+use tokio::time::sleep;
+
+// ...
+
+static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| reqwest::Client::new());
+
+const MAX_RETRIES: u32 = 5;
 
 /**
  * Get the list of relay configurations
@@ -56,7 +65,7 @@ async fn make_request(
   headers: HeaderMap,
   body: Option<serde_json::Value>,
 ) -> Result<String, CustomError> {
-  let client = reqwest::Client::new();
+  let client = &*CLIENT;
   let request = client.request(method, url).headers(headers);
 
   let request = if let Some(body) = body {
@@ -134,14 +143,32 @@ pub async fn forward_buffer_messages(
       }
   }]);
 
-  match make_request(reqwest::Method::POST, &endpoint, headers, Some(body)).await {
-    Ok(response) => response,
-    Err(e) => {
-      return Err(Box::new(e));
-    }
-  };
+  let mut attempt = 0;
+  loop {
+    let headers_clone = headers.clone();
+    let body_clone = body.clone();
+    
+    match make_request(reqwest::Method::POST, &endpoint, headers_clone, Some(body_clone)).await {
+      Ok(_) => return Ok(()),
+      Err(e) => {
+        let should_retry = match e.status {
+            StatusCode::TOO_MANY_REQUESTS => true,
+            status if status.is_server_error() => true,
+            _ => false,
+        };
 
-  Ok(())
+        if should_retry && attempt < MAX_RETRIES {
+            attempt += 1;
+            let backoff = std::time::Duration::from_millis(500 * 2u64.pow(attempt));
+            log::warn!(target: "mqtt", "Request failed with status: {}. Retrying in {:?} (Attempt {}/{})", e.status, backoff, attempt, MAX_RETRIES);
+            sleep(backoff).await;
+            continue;
+        }
+        
+        return Err(Box::new(e));
+      }
+    };
+  }
 }
 
 /**
