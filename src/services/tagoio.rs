@@ -15,7 +15,7 @@ use tokio::time::sleep;
 
 // ...
 
-static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| reqwest::Client::new());
+static CLIENT: Lazy<reqwest::Client> = Lazy::new(reqwest::Client::new);
 
 const MAX_RETRIES: u32 = 5;
 
