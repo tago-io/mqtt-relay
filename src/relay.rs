@@ -117,7 +117,7 @@ pub async fn start_relay(unsafe_mode: bool) -> Result<()> {
   let addr = SocketAddr::from((HOST_ADDRESS.parse::<std::net::IpAddr>().unwrap(), api_port));
 
   tokio::spawn(async move {
-    log::info!(target: "info", "Starting Publish API on: {}", addr);
+    log::info!(target: "info", "Starting the Publish API at: {}", addr);
     axum_server::bind_openssl(addr, acceptor)
       .serve(app.into_make_service())
       .await

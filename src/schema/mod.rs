@@ -54,7 +54,6 @@ impl RelayConfig {
         Ok(())
       }
       Err(e) => {
-        log::error!(target: "network", "Failed to verify network token for relay {}: {}", self.id, e);
         Err(e.into())
       }
     }
