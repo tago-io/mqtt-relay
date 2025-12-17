@@ -6,7 +6,7 @@ use rumqttc::{
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::{
-  sync::{mpsc, Mutex},
+  sync::{mpsc, Mutex, Semaphore},
   time::{sleep, Duration},
 };
 const BACKOFF_MAX_RETRIES: u32 = 20;
@@ -48,7 +48,7 @@ pub async fn run_mqtt_relay_connection(relay_cfg: Arc<RelayConfig>, publish_rx: 
       backoff_retry_attempts = 0;
     }
 
-    process_incoming_messages(&mut eventloop, &relay_cfg).await;
+    process_incoming_messages(&mut eventloop, relay_cfg.clone()).await;
 
     if backoff_retry_attempts >= BACKOFF_MAX_RETRIES {
       log::error!(target: "mqtt", "Max retries reached. Exiting: {}", relay_cfg.id);
@@ -198,13 +198,28 @@ async fn publish_messages(
   Ok(())
 }
 
-async fn process_incoming_messages(eventloop: &mut rumqttc::EventLoop, relay_cfg: &RelayConfig) {
+async fn process_incoming_messages(eventloop: &mut rumqttc::EventLoop, relay_cfg: Arc<RelayConfig>) {
+  // Limit concurrent requests to avoid overwhelming TagoIO or running out of file descriptors
+  let semaphore = Arc::new(Semaphore::new(50));
+
   while let Ok(notification) = eventloop.poll().await {
     if let rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) = notification {
       log::info!(target: "mqtt", "[Broker] Received message on topic {}", publish.topic);
-      if let Err(e) = crate::services::tagoio::forward_buffer_messages(relay_cfg, &publish).await {
-        log::error!(target: "mqtt", "Failed to forward message to TagoIO: {:?}", e.to_string());
-      }
+
+      let relay_cfg = relay_cfg.clone();
+      let semaphore = semaphore.clone();
+
+      tokio::spawn(async move {
+        // Acquire a permit. If the semaphore is closed, we just return.
+        let _permit = match semaphore.acquire().await {
+          Ok(p) => p,
+          Err(_) => return,
+        };
+
+        if let Err(e) = crate::services::tagoio::forward_buffer_messages(&relay_cfg, &publish).await {
+          log::error!(target: "mqtt", "Failed to forward message to TagoIO: {:?}", e.to_string());
+        }
+      });
     }
   }
 }
