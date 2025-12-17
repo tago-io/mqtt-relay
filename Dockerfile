@@ -53,6 +53,13 @@ RUN apt update
 RUN apt install -y openssl build-essential netcat-traditional ca-certificates
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Expose the downlink port for TagoIO middleware endpoint
+EXPOSE 3001
+
+# Health check to ensure the relay is running
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD nc -z localhost 3001 || exit 1
+
 RUN mkdir -p ${TAGOIO_SOURCE_FOLDER}
 WORKDIR ${TAGOIO_SOURCE_FOLDER}
 
