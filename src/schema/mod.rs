@@ -53,9 +53,7 @@ impl RelayConfig {
         self.network_id = Some(verified_id);
         Ok(())
       }
-      Err(e) => {
-        Err(e.into())
-      }
+      Err(e) => Err(e.into()),
     }
   }
 }

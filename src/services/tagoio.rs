@@ -147,24 +147,24 @@ pub async fn forward_buffer_messages(
   loop {
     let headers_clone = headers.clone();
     let body_clone = body.clone();
-    
+
     match make_request(reqwest::Method::POST, &endpoint, headers_clone, Some(body_clone)).await {
       Ok(_) => return Ok(()),
       Err(e) => {
         let should_retry = match e.status {
-            StatusCode::TOO_MANY_REQUESTS => true,
-            status if status.is_server_error() => true,
-            _ => false,
+          StatusCode::TOO_MANY_REQUESTS => true,
+          status if status.is_server_error() => true,
+          _ => false,
         };
 
         if should_retry && attempt < MAX_RETRIES {
-            attempt += 1;
-            let backoff = std::time::Duration::from_millis(500 * 2u64.pow(attempt));
-            log::warn!(target: "mqtt", "Request failed with status: {}. Retrying in {:?} (Attempt {}/{})", e.status, backoff, attempt, MAX_RETRIES);
-            sleep(backoff).await;
-            continue;
+          attempt += 1;
+          let backoff = std::time::Duration::from_millis(500 * 2u64.pow(attempt));
+          log::warn!(target: "mqtt", "Request failed with status: {}. Retrying in {:?} (Attempt {}/{})", e.status, backoff, attempt, MAX_RETRIES);
+          sleep(backoff).await;
+          continue;
         }
-        
+
         return Err(Box::new(e));
       }
     };
