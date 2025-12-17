@@ -10,7 +10,7 @@
           "label": "Network Token",
           "name": "network_token",
           "description": "Token for the TagoIO Network that the relay will use for communication.",
-          "field_type": "token",
+          "field_type": "string",
           "token_type": "network",
           "required": true,
           "env_key": "TAGOIO__RELAY__NETWORK_TOKEN"
@@ -19,7 +19,7 @@
           "label": "Authorization Token",
           "name": "authorization_token",
           "description": "Authorization token from TagoIO for device authentication.",
-          "field_type": "token",
+          "field_type": "string",
           "token_type": "authorization",
           "required": true,
           "env_key": "TAGOIO__RELAY__AUTHORIZATION_TOKEN"
@@ -107,7 +107,7 @@
           "label": "Cargo Server SSL CA Certificate",
           "name": "cargo_server_ssl_ca",
           "description": "Base64-encoded CA certificate for private Cargo registry authentication (required for building)",
-          "field_type": "textarea",
+          "field_type": "string",
           "required": true,
           "env_key": "CARGO_SERVER_SSL_CA"
         },
@@ -115,7 +115,7 @@
           "label": "Cargo Server SSL Certificate",
           "name": "cargo_server_ssl_cert",
           "description": "Base64-encoded client certificate for private Cargo registry authentication (required for building)",
-          "field_type": "textarea",
+          "field_type": "string",
           "required": true,
           "env_key": "CARGO_SERVER_SSL_CERT"
         },
@@ -123,7 +123,7 @@
           "label": "Cargo Server SSL Key",
           "name": "cargo_server_ssl_key",
           "description": "Base64-encoded private key for private Cargo registry authentication (required for building)",
-          "field_type": "textarea",
+          "field_type": "string",
           "required": true,
           "env_key": "CARGO_SERVER_SSL_KEY"
         },
@@ -131,7 +131,7 @@
           "label": "MQTT Broker TLS CA Certificate",
           "name": "mqtt_broker_tls_ca",
           "description": "CA certificate for MQTT broker TLS connection (optional)",
-          "field_type": "textarea",
+          "field_type": "string",
           "required": false,
           "env_key": "TAGOIO__RELAY__MQTT__BROKER_TLS_CA"
         },
@@ -139,7 +139,7 @@
           "label": "MQTT Broker TLS Certificate",
           "name": "mqtt_broker_tls_cert",
           "description": "Client certificate for MQTT broker TLS connection (optional)",
-          "field_type": "textarea",
+          "field_type": "string",
           "required": false,
           "env_key": "TAGOIO__RELAY__MQTT__BROKER_TLS_CERT"
         },
@@ -147,7 +147,7 @@
           "label": "MQTT Broker TLS Key",
           "name": "mqtt_broker_tls_key",
           "description": "Private key for MQTT broker TLS connection (optional)",
-          "field_type": "textarea",
+          "field_type": "string",
           "required": false,
           "env_key": "TAGOIO__RELAY__MQTT__BROKER_TLS_KEY"
         }
