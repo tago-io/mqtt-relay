@@ -176,7 +176,7 @@ type SharedTaskMap = Arc<RwLock<TaskMap>>;
 async fn handle_publish(
   Extension(tasks): Extension<SharedTaskMap>,
   payload: Result<Json<PublishRequest>, JsonRejection>,
-) -> Result<impl IntoResponse, JsonError> {
+) -> Response {
   let payload = match payload {
     Ok(payload) => payload,
     Err(rejection) => {
@@ -192,7 +192,7 @@ async fn handle_publish(
         ),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown error".to_string()),
       };
-      return Ok((status, Json(json!({ "error": error_message }))));
+      return (status, Json(json!({ "error": error_message }))).into_response();
     }
   };
 
@@ -201,7 +201,7 @@ async fn handle_publish(
     if let Some(first_relay_id) = tasks.keys().next() {
       first_relay_id.clone()
     } else {
-      return Err(JsonError(axum::http::StatusCode::NOT_FOUND));
+      return JsonError(axum::http::StatusCode::NOT_FOUND).into_response();
     }
   } else {
     payload.relay_id.clone().unwrap()
@@ -215,14 +215,12 @@ async fn handle_publish(
       retain: payload.retain,
     };
 
-    publish_tx
-      .send(message)
-      .await
-      .map_err(|_| JsonError(axum::http::StatusCode::INTERNAL_SERVER_ERROR))?;
-
-    Ok((StatusCode::OK, Json(json!({ "status": "Message published" }))))
+    match publish_tx.send(message).await {
+      Ok(_) => (StatusCode::OK, Json(json!({ "status": "Message published" }))).into_response(),
+      Err(_) => JsonError(axum::http::StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+    }
   } else {
-    Err(JsonError(axum::http::StatusCode::NOT_FOUND))
+    JsonError(axum::http::StatusCode::NOT_FOUND).into_response()
   }
 }
 

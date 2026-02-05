@@ -45,6 +45,7 @@ pub async fn run_mqtt_relay_connection(relay_cfg: Arc<RelayConfig>, publish_rx: 
       log::error!(target: "error", "Failed to connect to MQTT broker. Error details: {:?}", e.to_string());
     } else {
       log::info!(target: "mqtt", "Connected to MQTT broker successfully");
+      log::info!(target: "mqtt", "Subscribed to topics: {:?}", relay_cfg.config.mqtt.subscribe);
       backoff_retry_attempts = 0;
     }
 
