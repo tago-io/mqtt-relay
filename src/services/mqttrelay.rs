@@ -63,6 +63,21 @@ pub async fn run_mqtt_relay_connection(relay_cfg: Arc<RelayConfig>, publish_rx: 
   }
 }
 
+/// Resolve TLS material that may be an inline PEM string (TagoIO Deploy)
+/// or a path to a PEM file (self-hosted). Empty when absent or unreadable.
+fn resolve_pem(value: &Option<String>, label: &str) -> String {
+  let Some(value) = value else {
+    return String::new();
+  };
+  if value.trim_start().starts_with("-----BEGIN") {
+    return value.clone();
+  }
+  std::fs::read_to_string(value).unwrap_or_else(|e| {
+    log::error!(target: "mqtt", "Failed to read {} file {}: {}", label, value, e);
+    String::new()
+  })
+}
+
 fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
   let client_id = relay_cfg
     .config
@@ -73,36 +88,10 @@ fn initialize_mqtt_options(relay_cfg: &RelayConfig) -> MqttOptions {
 
   let username = &relay_cfg.config.mqtt.username;
   let password = &relay_cfg.config.mqtt.password;
-  let ca_file = &relay_cfg.config.mqtt.broker_tls_ca;
-  let crt_file = &relay_cfg.config.mqtt.broker_tls_cert;
-  let key_file = &relay_cfg.config.mqtt.broker_tls_key;
 
-  let ca_content = if let Some(ca_path) = ca_file {
-    std::fs::read_to_string(ca_path).unwrap_or_else(|e| {
-      log::error!(target: "mqtt", "Failed to read CA file {}: {}", ca_path, e);
-      String::new()
-    })
-  } else {
-    String::new()
-  };
-
-  let crt_content = if let Some(crt_path) = crt_file {
-    std::fs::read_to_string(crt_path).unwrap_or_else(|e| {
-      log::error!(target: "mqtt", "Failed to read certificate file {}: {}", crt_path, e);
-      String::new()
-    })
-  } else {
-    String::new()
-  };
-
-  let key_content = if let Some(key_path) = key_file {
-    std::fs::read_to_string(key_path).unwrap_or_else(|e| {
-      log::error!(target: "mqtt", "Failed to read key file {}: {}", key_path, e);
-      String::new()
-    })
-  } else {
-    String::new()
-  };
+  let ca_content = resolve_pem(&relay_cfg.config.mqtt.broker_tls_ca, "CA");
+  let crt_content = resolve_pem(&relay_cfg.config.mqtt.broker_tls_cert, "certificate");
+  let key_content = resolve_pem(&relay_cfg.config.mqtt.broker_tls_key, "key");
 
   // Replace the file paths with their contents
   let ca_file = if !ca_content.is_empty() { Some(ca_content) } else { None };
