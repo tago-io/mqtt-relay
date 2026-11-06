@@ -18,6 +18,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build & Release - ${{ matrix.config.platform }}
